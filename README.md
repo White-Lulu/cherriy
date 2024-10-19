@@ -1,6 +1,6 @@
 # cherriy
 
-***A test app create by Flutter!***
+***A test app created by Flutter!***
 
 ## Download
 
