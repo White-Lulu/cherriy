@@ -1,0 +1,11 @@
+# Flutter项目的静态分析配置
+include: package:flutter_lints/flutter.yaml # 引入了Flutter官方推荐的lint规则集
+
+linter:
+  rules:
+    prefer_const_constructors: false # 是否强制使用const构造函数
+    prefer_final_fields: false # 是否要求将字段声明为final
+    use_key_in_widget_constructors: false # 是否要求在Widget构造函数中使用key参数
+    prefer_const_literals_to_create_immutables: false # 是否强制使用const字面量创建不可变对象
+    prefer_const_constructors_in_immutables: false # 是否对于不可变类,强制使用const构造函数
+    avoid_print: false #是否避免使用print语句(通常在生产环境中不推荐)

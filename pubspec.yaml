@@ -1,0 +1,26 @@
+name: cherriy
+description: An experimental efficiency tool
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 0.0.1+1
+
+environment:
+  sdk: '>=2.19.4 <4.0.0'
+
+dependencies: # 依赖项*3
+  flutter:
+    sdk: flutter
+
+  provider: ^6.0.0 # 一个用于状态管理的包
+
+  shared_preferences: ^2.0.13
+
+dev_dependencies: # 开发依赖项
+  flutter_test: # Flutter的测试框架
+    sdk: flutter
+
+  flutter_lints: ^5.0.0 # 提供代码分析和风格检查的工具
+
+flutter:
+  uses-material-design: true # 使用Material Design风格
