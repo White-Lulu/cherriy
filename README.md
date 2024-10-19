@@ -1,5 +1,9 @@
 # cherriy
 
-**A test app create by Flutter!**
+***A test app create by Flutter!***
 
-![:smile: Latest Version 0.0.1](./sources/cherriy.apk)
+## Download
+
+[Latest Version 0.0.1](./sources/cherriy.apk)
+
+Thanks for your support~😊😊😊
