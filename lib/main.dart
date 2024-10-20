@@ -3,42 +3,54 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
 
+// 主函数，应用程序的入口点
 void main() {
+  // 使用 runZonedGuarded 来捕获未处理的异步错误
   runZonedGuarded(() {
+    // 确保 Flutter 绑定初始化
     WidgetsFlutterBinding.ensureInitialized();
+    // 运行应用程序
     runApp(MyApp());
   }, (error, stackTrace) {
+    // 错误处理函数，打印错误和堆栈跟踪
     print('错误: $error');
     print('堆栈跟踪: $stackTrace');
   });
 }
 
+// MyApp 类，定义应用程序的整体结构和主题
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Personal Manager',
+      // 移除调试标签
       debugShowCheckedModeBanner: false,
+      // 定义应用程序的主题
       theme: ThemeData(
         primarySwatch: Colors.blue,
         primaryColor: Color(0xFF4A90E2),
         scaffoldBackgroundColor: Colors.grey[100],
+        // 定义 AppBar 主题
         appBarTheme: AppBarTheme(
           backgroundColor: Color(0xFF4A90E2),
           elevation: 0,
         ),
+        // 定义底部导航栏主题
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
           backgroundColor: Colors.white,
           selectedItemColor: Color(0xFF4A90E2),
           unselectedItemColor: Colors.grey[600],
           elevation: 8,
         ),
+        // 定义卡片主题
         cardTheme: CardTheme(
           color: Colors.white,
           elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         ),
+        // 定义输入装饰主题
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -46,6 +58,7 @@ class MyApp extends StatelessWidget {
           filled: true,
           fillColor: Colors.grey[200],
         ),
+        // 定义凸起按钮主题
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Color(0xFF4A90E2),
@@ -56,18 +69,23 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+      // 设置首页
       home: HomePage(),
     );
   }
 }
 
+// HomePage 类，定义应用程序的主页面
 class HomePage extends StatefulWidget {
   @override
   HomePageState createState() => HomePageState();
 }
 
+// HomePage 的状态类
 class HomePageState extends State<HomePage> {
+  // 当前选中的底部导航栏索引
   int _currentIndex = 0;
+  // 定义页面列表
   final List<Widget> _pages = [
     AccountingPage(),
     TodoPage(),
@@ -81,9 +99,12 @@ class HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text('Personal Manager'),
       ),
+      // 根据当前索引显示对应的页面
       body: _pages[_currentIndex],
+      // 底部导航栏
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
+        // 当点击底部导航栏项目时更新状态
         onTap: (index) {
           setState(() {
             _currentIndex = index;
@@ -93,6 +114,7 @@ class HomePageState extends State<HomePage> {
         backgroundColor: Colors.blue,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
+        // 定义底部导航栏的项目
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: '记账'),
           BottomNavigationBarItem(icon: Icon(Icons.check_box), label: '代办'),
@@ -104,32 +126,40 @@ class HomePageState extends State<HomePage> {
   }
 }
 
-// 记账
+// 记账页面
 class AccountingPage extends StatefulWidget {
   @override
   AccountingPageState createState() => AccountingPageState();
 }
 
 class AccountingPageState extends State<AccountingPage> {
+  // 表单的全局键，用于验证表单
   final _formKey = GlobalKey<FormState>();
+  // 控制器，用于获取用户输入的金额、类别和备注
   final _amountController = TextEditingController();
   final _categoryController = TextEditingController();
   final _noteController = TextEditingController();
+  // 存储记账记录的列表
   List<Map<String, String>> records = [];
+  // 标记是否正在加载数据
   bool _isLoading = true;
+  // 交易类型，默认为支出
   String _transactionType = '支出';
 
   @override
   void initState() {
     super.initState();
+    // 初始化时加载记录
     _loadRecords();
   }
 
+  // 从本地存储加载记账记录
   Future<void> _loadRecords() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedRecords = prefs.getString('accountingRecords');
     if (savedRecords != null) {
       setState(() {
+        // 解码JSON并转换为List<Map<String, String>>
         records = (jsonDecode(savedRecords) as List<dynamic>)
             .map((item) => Map<String, String>.from(item))
             .toList();
@@ -142,11 +172,13 @@ class AccountingPageState extends State<AccountingPage> {
     }
   }
 
+  // 保存记账记录到本地存储
   Future<void> _saveRecords() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('accountingRecords', jsonEncode(records));
   }
 
+  // 添加新的记账记录
   void _addRecord() {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -156,6 +188,7 @@ class AccountingPageState extends State<AccountingPage> {
           'note': _noteController.text,
           'type': _transactionType,
         });
+        // 清空输入框
         _amountController.clear();
         _categoryController.clear();
         _noteController.clear();
@@ -180,6 +213,7 @@ class AccountingPageState extends State<AccountingPage> {
                   key: _formKey,
                   child: Column(
                     children: [
+                      // 交易类型下拉选择框
                       DropdownButtonFormField<String>(
                         value: _transactionType,
                         items: ['收入', '支出'].map((String value) {
@@ -195,7 +229,8 @@ class AccountingPageState extends State<AccountingPage> {
                         },
                         decoration: InputDecoration(labelText: '类型'),
                       ),
-                      SizedBox(height: 16), // 添加间距
+                      SizedBox(height: 16),
+                      // 金额输入框
                       TextFormField(
                         controller: _amountController,
                         decoration: InputDecoration(labelText: '金额'),
@@ -207,7 +242,8 @@ class AccountingPageState extends State<AccountingPage> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 16), // 添加间距
+                      SizedBox(height: 16),
+                      // 类别输入框
                       TextFormField(
                         controller: _categoryController,
                         decoration: InputDecoration(labelText: '类别'),
@@ -218,13 +254,14 @@ class AccountingPageState extends State<AccountingPage> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 16), // 添加间距
+                      SizedBox(height: 16),
+                      // 备注输入框
                       TextFormField(
                         controller: _noteController,
                         decoration: InputDecoration(labelText: '备注'),
                       ),
-                  
-                      SizedBox(height:24),  // 在按钮之前增加更多间距
+                      SizedBox(height:24),
+                      // 添加记录按钮
                       ElevatedButton(
                         onPressed: _addRecord,
                         child: Text('添加记录'),
@@ -235,6 +272,7 @@ class AccountingPageState extends State<AccountingPage> {
                   ),
                  ),
                 SizedBox(height: 16),
+                // 显示记账记录列表
                 Expanded(
                   child: ListView.builder(
                     itemCount: records.length,
@@ -247,7 +285,6 @@ class AccountingPageState extends State<AccountingPage> {
                           ),
                           title: Text('金额: ${records[index]['amount']}'),
                           subtitle: Text('类别: ${records[index]['category']}\n备注: ${records[index]['note']}'),
-                                               
                         ),
                       );
                     },
@@ -259,22 +296,25 @@ class AccountingPageState extends State<AccountingPage> {
   }
 }
 
-// Todo
+// Todo 页面
 class TodoPage extends StatefulWidget {
   @override
   TodoPageState createState() => TodoPageState();
 }
 
 class TodoPageState extends State<TodoPage> {
+  // 用于控制输入的待办事项文本
   final _todoController = TextEditingController();
+  // 存储待办事项的列表
   List<Map<String, dynamic>> todos = [];
 
   @override
   void initState() {
     super.initState();
-    _loadTodos();  // 加载代办数  
+    _loadTodos();  // 初始化时加载待办事项
   }
 
+  // 从本地存储加载待办事项
   void _loadTodos() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedTodos = prefs.getString('todoList');
@@ -285,21 +325,24 @@ class TodoPageState extends State<TodoPage> {
     }
   }
 
+  // 保存待办事项到本地存储
   void _saveTodos() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('todoList', jsonEncode(todos));
   }
 
+  // 添加新的待办事项
   void _addTodo() {
     if (_todoController.text.isNotEmpty) {
       setState(() {
         todos.add({'task': _todoController.text, 'completed': false});
-        _saveTodos();  // 保存代办事项
+        _saveTodos();  // 保存待办事项
         _todoController.clear();
       });
     }
   }
 
+  // 切换待办事项的完成状态
   void _toggleComplete(int index) {
     setState(() {
       todos[index]['completed'] = !todos[index]['completed'];
@@ -307,6 +350,7 @@ class TodoPageState extends State<TodoPage> {
     });
   }
 
+  // 删除待办事项
   void _deleteTodo(int index) {
     setState(() {
       todos.removeAt(index);
@@ -320,23 +364,24 @@ class TodoPageState extends State<TodoPage> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-           Card(
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child:
-          TextField(
-            controller: _todoController,
-            decoration: InputDecoration(
-              labelText: '代办事项',
-              suffixIcon: IconButton(
-                icon: Icon(Icons.add),
-                onPressed: _addTodo,
-              ),
-              ),
-              ),
+                TextField(
+                  controller: _todoController,
+                  decoration: InputDecoration(
+                    labelText: '待办事项',
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: _addTodo,
+                    ),
+                  ),
+                ),
             ),
           ),
           SizedBox(height: 16),
+          // 显示待办事项列表
           Expanded(
             child: ListView.builder(
               itemCount: todos.length,
@@ -355,10 +400,12 @@ class TodoPageState extends State<TodoPage> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // 完成状态复选框
                         Checkbox(
                           value: todos[index]['completed'],
                           onChanged: (value) => _toggleComplete(index),
                         ),
+                        // 删除按钮
                         IconButton(
                           icon: Icon(Icons.delete),
                           onPressed: () => _deleteTodo(index),
@@ -376,17 +423,21 @@ class TodoPageState extends State<TodoPage> {
   }
 }
 
-// 时间管理
+// 时间管理页面
 class TimeManagementPage extends StatefulWidget {
   @override
   TimeManagementPageState createState() => TimeManagementPageState();
 }
 
 class TimeManagementPageState extends State<TimeManagementPage> {
-  int _remainingTime = 25 * 60; // 25分钟
-  bool _isRunning = false;
-  Timer? _timer;
+  int _remainingTime = 25 * 60; // 25分钟的倒计时
+  bool _isRunning = false; // 计时器是否在运行
+  Timer? _timer; // 计时器
+  String _currentTask = ''; // 当前任务
+  List<String> _tasks = []; // 任务列表
+  final _taskController = TextEditingController(); // 任务输入控制器
 
+  // 开始计时器
   void _startTimer() {
     setState(() {
       _isRunning = true;
@@ -398,11 +449,16 @@ class TimeManagementPageState extends State<TimeManagementPage> {
         } else {
           _timer?.cancel();
           _isRunning = false;
+          _showCompletionDialog(); // 计时结束时显示完成对话框
         }
       });
     });
+    if (_tasks.isNotEmpty) {
+      _currentTask = _tasks.removeAt(0);
+    }
   }
 
+  // 重置计时器
   void _resetTimer() {
     setState(() {
       _timer?.cancel();
@@ -411,15 +467,49 @@ class TimeManagementPageState extends State<TimeManagementPage> {
     });
   }
 
+  // 格式化时间显示
   String _formatTime(int seconds) {
     int minutes = seconds ~/ 60;
     int remainingSeconds = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  // 添加新任务
+  void _addTask() {
+    if (_taskController.text.isNotEmpty) {
+      setState(() {
+        _tasks.add(_taskController.text);
+        _taskController.clear();
+      });
+    }
+  }
+
+  // 显示完成对话框
+  void _showCompletionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('专注时间结束'),
+          content: Text('你已经完��了 $_currentTask'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('确定'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // TimeManagementPage 的 build 方法
   @override
   Widget build(BuildContext context) {
     return Container(
+      // 设置背景渐变色
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -433,28 +523,59 @@ class TimeManagementPageState extends State<TimeManagementPage> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-            _formatTime(_remainingTime),
-            style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: _isRunning ? null : _startTimer,
-                child: Text('开始'),
-              ),
-              SizedBox(width: 20),
-              ElevatedButton(
-                onPressed: _resetTimer,
-                child: Text('重置'),
-              ),
-            ],
-          ),
-            ],
-          ),
+              children: [
+                // 显示倒计时
+                Text(
+                  _formatTime(_remainingTime),
+                  style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 20),
+                // 开始和重置按钮
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _isRunning ? null : _startTimer,
+                      child: Text('开始'),
+                    ),
+                    SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: _resetTimer,
+                      child: Text('重置'),
+                    ),
+                  ],
+                ),
+                // 任务输入区域
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _taskController,
+                          decoration: InputDecoration(labelText: '添加任务'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _addTask,
+                          child: Text('添加'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // 任务列表
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _tasks.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(_tasks[index]),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -462,24 +583,29 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   }
 }
 
-// 日记
+// 日记页面
 class DiaryPage extends StatefulWidget {
   @override
   DiaryPageState createState() => DiaryPageState();
 }
 
 class DiaryPageState extends State<DiaryPage> {
+  // 日记内容输入控制器
   final _diaryController = TextEditingController();
-  List<Map<String, String>> diaries = []; // 修改为 List<Map<String, String>>
+  // 存储日记条目的列表
+  List<Map<String, String>> diaries = [];
+  // 当前选择的心情
   String _selectedMood = '😊';
+  // 可选的心情列表
   final List<String> _moods = ['😊', '😐', '😢', '😡', '😴'];
 
   @override
   void initState() {
     super.initState();
-    _loadDiaries();  // 初始化加载日记
+    _loadDiaries();  // 初始化时加载日记
   }
 
+  // 从本地存储加载日记
   void _loadDiaries() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedDiaries = prefs.getString('diaries');
@@ -492,14 +618,16 @@ class DiaryPageState extends State<DiaryPage> {
     }
   }
 
+  // 保存日记到本地存储
   void _saveDiaries() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String jsonString = jsonEncode(diaries.map((diary) => 
-    Map<String, String>.from(diary)
-  ).toList());
-  await prefs.setString('diaries', jsonString);
-}
+      Map<String, String>.from(diary)
+    ).toList());
+    await prefs.setString('diaries', jsonString);
+  }
 
+  // 添加新的日记条目
   void _addDiary() {
     if (_diaryController.text.isNotEmpty) {
       setState(() {
@@ -520,6 +648,7 @@ class DiaryPageState extends State<DiaryPage> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
+          // 心情选择器
           Row(
             children: _moods.map((mood) {
               return IconButton(
@@ -532,6 +661,7 @@ class DiaryPageState extends State<DiaryPage> {
               );
             }).toList(),
           ),
+          // 日记输入框
           TextField(
             controller: _diaryController,
             decoration: InputDecoration(
@@ -543,6 +673,7 @@ class DiaryPageState extends State<DiaryPage> {
             ),
             maxLines: 3,
           ),
+          // 日记列表
           Expanded(
             child: ListView.builder(
               itemCount: diaries.length,
