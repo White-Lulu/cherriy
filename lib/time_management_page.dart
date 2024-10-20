@@ -94,11 +94,19 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: _isRunning ? null : _startTimer,
-                          child: Text('开始'),
+                          onPressed: _isRunning ? _pauseTimer : _startTimer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: textColor,
+                          ),
+                          child: Text(_isRunning ? '暂停' : '开始'),
                         ),
                         ElevatedButton(
                           onPressed: _resetTimer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: textColor,
+                          ),
                           child: Text('重置'),
                         ),
                       ],
@@ -214,7 +222,6 @@ class TimeManagementPageState extends State<TimeManagementPage> {
       _isRunning = true;
       if (_currentTaskIndex == -1) {
         _currentTaskIndex = _tasks.indexWhere((task) => !task.isCompleted);
-        _remainingTime = 25 * 60;
       }
       _timer = Timer.periodic(Duration(seconds: 1), (timer) {
         setState(() {
@@ -228,10 +235,18 @@ class TimeManagementPageState extends State<TimeManagementPage> {
             _timer?.cancel();
             _isRunning = false;
             _currentTaskIndex = -1;
+            _remainingTime = 25 * 60;
           }
           _saveTasks();
         });
       });
+    });
+  }
+
+  void _pauseTimer() {
+    setState(() {
+      _isRunning = false;
+      _timer?.cancel();
     });
   }
 
@@ -240,13 +255,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
       _timer?.cancel();
       _remainingTime = 25 * 60;
       _isRunning = false;
-      _currentTaskIndex = -1;
-      for (var task in _tasks) {
-        if (!task.isCompleted) {
-          task.timeSpent = 0;
-        }
-      }
-      _saveTasks();
+      // 不重置当前任务的计时
     });
   }
 
