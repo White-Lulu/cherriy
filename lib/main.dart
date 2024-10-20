@@ -36,7 +36,7 @@ class MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
-      title: 'Personal Manager',
+      title: 'Cherriy (o^^o)♪',
       debugShowCheckedModeBanner: false,
       theme: themeProvider.themeData,
       home: MyHomePage(),
@@ -65,7 +65,7 @@ class MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Personal Manager'),
+        title: Text('Cherriy (o^^o)♪'),
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
