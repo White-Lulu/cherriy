@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'theme_settings_page.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
+import 'theme_settings_page.dart';
 
 // 主函数，应用程序的入口点
 void main() {
@@ -69,34 +69,28 @@ class MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: Icon(Icons.settings),
             onPressed: () {
+              // 导航到主题设置页面
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ThemeSettingsPage()),
-              ).then((newThemeData) {
-                if (newThemeData != null) {
-                  Provider.of<ThemeProvider>(context, listen: false).setTheme(newThemeData);
-                }
-              });
+              );
             },
           ),
         ],
       ),
-      // 根据当前索引显示对应的页面
       body: _pages[_currentIndex],
-      // 底部导航栏
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        // 当点击底部导航栏项目时更新状态
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.blue,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white70,
-        // 定义底部导航栏的项目
+        // 移除这些颜色设置，让主题控制颜色
+        // backgroundColor: Colors.blue,
+        // selectedItemColor: Colors.white,
+        // unselectedItemColor: Colors.white70,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: '记账'),
           BottomNavigationBarItem(icon: Icon(Icons.check_box), label: '代办'),
@@ -160,7 +154,7 @@ class AccountingPageState extends State<AccountingPage> {
     await prefs.setString('accountingRecords', jsonEncode(records));
   }
 
-  // 添加新的记账记录
+  // 添加新记账记录
   void _addRecord() {
     if (_formKey.currentState!.validate()) {
       setState(() {

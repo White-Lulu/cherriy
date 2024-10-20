@@ -40,7 +40,12 @@ class ThemeProvider with ChangeNotifier {
         selectedItemColor: Color(primaryColor),
         unselectedItemColor: Color(primaryColor).withOpacity(0.6),
       ),
-      // 其他主题属性...
+      dialogTheme: DialogTheme(
+        backgroundColor: Color(cardColor).withOpacity(cardOpacity),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Color(cardColor).withOpacity(cardOpacity),
+      ),
     );
     notifyListeners();
   }

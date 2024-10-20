@@ -12,12 +12,8 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late Color primaryColor;
   late Color scaffoldBackgroundColor;
   late Color cardColor;
-  late Color bottomNavBarColor;
   late double cardOpacity;
-  late double bottomNavBarOpacity;
-  late double elevation;
-  late double borderRadius;
-  late bool useCard;
+  late Color themeTextColor;
 
   @override
   void initState() {
@@ -30,13 +26,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     setState(() {
       primaryColor = theme.primaryColor;
       scaffoldBackgroundColor = theme.scaffoldBackgroundColor;
-      cardColor = theme.cardColor;
-      bottomNavBarColor = theme.bottomNavigationBarTheme.backgroundColor ?? theme.primaryColor;
-      cardOpacity = theme.cardColor.opacity;
-      bottomNavBarOpacity = theme.bottomNavigationBarTheme.backgroundColor?.opacity ?? 1.0;
-      elevation = 4.0;
-      borderRadius = 12.0;
-      useCard = true;
+      cardColor = theme.cardTheme.color ?? theme.cardColor;
+      cardOpacity = theme.cardTheme.color?.opacity ?? 1.0;
+      themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor;
     });
   }
 
@@ -50,9 +42,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
           _buildColorPicker('卡片颜色', cardColor, (color) => setState(() => cardColor = color)),
           _buildOpacitySlider('卡片透明度', cardOpacity, (value) => setState(() => cardOpacity = value)),
-          _buildColorPicker('底部导航栏颜色', bottomNavBarColor, (color) => setState(() => bottomNavBarColor = color)),
-          _buildOpacitySlider('底部导航栏透明度', bottomNavBarOpacity, (value) => setState(() => bottomNavBarOpacity = value)),
-          // ... 其他设置项
+          _buildColorPicker('主题字体色', themeTextColor, (color) => setState(() => themeTextColor = color)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -126,13 +116,23 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: primaryColor,
+        foregroundColor: themeTextColor,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: bottomNavBarColor.withOpacity(bottomNavBarOpacity),
-        selectedItemColor: primaryColor,
-        unselectedItemColor: primaryColor.withOpacity(0.6),
+        backgroundColor: primaryColor,
+        selectedItemColor: themeTextColor,
+        unselectedItemColor: themeTextColor.withOpacity(0.6),
       ),
-      // 其他主题属性...
+      textTheme: TextTheme(
+        headlineMedium: TextStyle(color: themeTextColor),
+        bodyMedium: TextStyle(color: themeTextColor),
+      ),
+      dialogTheme: DialogTheme(
+        backgroundColor: cardColor.withOpacity(cardOpacity),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: cardColor.withOpacity(cardOpacity),
+      ),
     );
     Provider.of<ThemeProvider>(context, listen: false).setTheme(newTheme);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('主题已保存')));
