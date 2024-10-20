@@ -88,7 +88,7 @@ class MyHomePageState extends State<MyHomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        // 移除这些颜色设置，让主题控制颜色
+        // 移除这些颜色设置，��主题控制颜色
         // backgroundColor: Colors.blue,
         // selectedItemColor: Colors.white,
         // unselectedItemColor: Colors.white70,
