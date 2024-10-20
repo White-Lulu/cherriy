@@ -10,47 +10,43 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   int _remainingTime = 25 * 60;
   bool _isRunning = false;
   Timer? _timer;
-  String _currentTask = '';
+  // String _currentTask = '';
   List<String> _tasks = [];
   final _taskController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    // 获取主题颜色
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 计时器显示
-            Text(
-              _formatTime(_remainingTime),
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            SizedBox(height: 20),
-            // 计时器卡片
+            // 计时器显示和当前任务卡片
             Card(
+              color: cardColor, // 使用主题的卡片颜色
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
                     Text(
-                      _currentTask.isEmpty ? '没有正在进行的任务' : '当前任务: $_currentTask',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      _formatTime(_remainingTime),
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontSize: 60,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
                     ),
-                    SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          onPressed: _isRunning ? null : _startTimer,
-                          child: Text('开始'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _resetTimer,
-                          child: Text('重置'),
-                        ),
-                      ],
+                    // ... 其他卡片内容保持不变
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _isRunning ? null : _startTimer,
+                      child: Text(_isRunning ? '计时中' : '开始计时'),
                     ),
                   ],
                 ),
@@ -72,6 +68,10 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                 SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: _addTask,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: textColor,
+                  ),
                   child: Text('添加'),
                 ),
               ],
@@ -127,14 +127,6 @@ class TimeManagementPageState extends State<TimeManagementPage> {
           }
         });
       });
-    });
-  }
-
-  void _resetTimer() {
-    setState(() {
-      _remainingTime = 25 * 60;
-      _isRunning = false;
-      _timer?.cancel();
     });
   }
 

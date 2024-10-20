@@ -12,7 +12,6 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late Color primaryColor;
   late Color scaffoldBackgroundColor;
   late Color cardColor;
-  late double cardOpacity;
   late Color themeTextColor;
 
   @override
@@ -27,7 +26,6 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       primaryColor = theme.primaryColor;
       scaffoldBackgroundColor = theme.scaffoldBackgroundColor;
       cardColor = theme.cardTheme.color ?? theme.cardColor;
-      cardOpacity = theme.cardTheme.color?.opacity ?? 1.0;
       themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor;
     });
   }
@@ -41,13 +39,13 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           _buildColorPicker('主色调', primaryColor, (color) => setState(() => primaryColor = color)),
           _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
           _buildColorPicker('卡片颜色', cardColor, (color) => setState(() => cardColor = color)),
-          _buildOpacitySlider('卡片透明度', cardOpacity, (value) => setState(() => cardOpacity = value)),
           _buildColorPicker('主题字体色', themeTextColor, (color) => setState(() => themeTextColor = color)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _saveTheme,
-        child: Icon(Icons.save),
+        child: Icon(Icons.save, color: themeTextColor),
+        backgroundColor: primaryColor,
       ),
     );
   }
@@ -56,7 +54,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     return ListTile(
       title: Text(label),
       trailing: GestureDetector(
-        onTap: () => _showColorPicker(color, onColorChanged),
+        onTap: () => _showColorPicker(label, color, onColorChanged),
         child: Container(
           width: 40,
           height: 40,
@@ -70,6 +68,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildOpacitySlider(String label, double opacity, ValueChanged<double> onChanged) {
     return ListTile(
       title: Text(label),
@@ -82,16 +81,19 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
-  void _showColorPicker(Color initialColor, ValueChanged<Color> onColorChanged) {
+  void _showColorPicker(String label, Color initialColor, ValueChanged<Color> onColorChanged) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        Color selectedColor = initialColor;
         return AlertDialog(
           title: Text('选择颜色'),
           content: SingleChildScrollView(
             child: ColorPicker(
-              pickerColor: initialColor,
-              onColorChanged: onColorChanged,
+              pickerColor: selectedColor,
+              onColorChanged: (color) {
+                selectedColor = color;
+              },
               labelTypes: const [],
               pickerAreaHeightPercent: 0.8,
             ),
@@ -99,7 +101,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           actions: <Widget>[
             TextButton(
               child: Text('确定'),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                onColorChanged(selectedColor);
+                print('$label 颜色已更改为: ${selectedColor.value.toRadixString(16)}');
+                Navigator.of(context).pop();
+              },
             ),
           ],
         );
@@ -112,7 +118,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: scaffoldBackgroundColor,
       cardTheme: CardTheme(
-        color: cardColor.withOpacity(cardOpacity),
+        color: cardColor,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: primaryColor,
@@ -128,10 +134,10 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         bodyMedium: TextStyle(color: themeTextColor),
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: cardColor.withOpacity(cardOpacity),
+        backgroundColor: cardColor,
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: cardColor.withOpacity(cardOpacity),
+        color: cardColor,
       ),
     );
     Provider.of<ThemeProvider>(context, listen: false).setTheme(newTheme);

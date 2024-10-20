@@ -43,7 +43,7 @@ class MyAppState extends State<MyApp> {
   }
 }
 
-// HomePage 类，定义应用程序的主页面
+// HomePage 类，定义应用序的主页面
 class MyHomePage extends StatefulWidget {
   @override
   MyHomePageState createState() => MyHomePageState();
@@ -175,6 +175,10 @@ class AccountingPageState extends State<AccountingPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 获取主题颜色
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: _isLoading
@@ -241,6 +245,10 @@ class AccountingPageState extends State<AccountingPage> {
                       ElevatedButton(
                         onPressed: _addRecord,
                         child: Text('添加记录'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: themeColor,
+                          foregroundColor: textColor,
+                        ),
                       ),
                     ],
                   ),
@@ -484,78 +492,118 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   // TimeManagementPage 的 build 方法
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // 设置背景渐变色
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF4A90E2), Color(0xFF63B8FF)],
-        ),
-      ),
-      child: Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 显示倒计时
-                Text(
-                  _formatTime(_remainingTime),
-                  style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 20),
-                // 开始和重置按钮
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+    // 获取主题颜色
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final cardColor = Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // 计时器显示和当前任务卡片
+            Card(
+              color: cardColor, // 使用主题的卡片颜色
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
                   children: [
-                    ElevatedButton(
-                      onPressed: _isRunning ? null : _startTimer,
-                      child: Text('开始'),
+                    Text(
+                      _formatTime(_remainingTime),
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontSize: 60,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
                     ),
-                    SizedBox(width: 20),
-                    ElevatedButton(
-                      onPressed: _resetTimer,
-                      child: Text('重置'),
+                    SizedBox(height: 20),
+                    Text(
+                      _currentTask.isEmpty ? '没有正在进行的任务' : '当前任务: $_currentTask',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
                     ),
-                  ],
-                ),
-                // 任务输入区域
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
+                    SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center, // 将按钮居中对齐
                       children: [
-                        TextField(
-                          controller: _taskController,
-                          decoration: InputDecoration(labelText: '添加任务'),
-                        ),
                         ElevatedButton(
-                          onPressed: _addTask,
-                          child: Text('添加'),
+                          onPressed: _isRunning ? null : _startTimer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: textColor,
+                          ),
+                          child: Text('开始'),
+                        ),
+                        SizedBox(width: 20), // 在按钮之间添加20像素的间距
+                        ElevatedButton(
+                          onPressed: _resetTimer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: textColor,
+                          ),
+                          child: Text('重置'),
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            // 任务输入区域
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _taskController,
+                    decoration: InputDecoration(
+                      labelText: '添加任务',
+                      border: UnderlineInputBorder(),
+                    ),
                   ),
                 ),
-                // 任务列表
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _tasks.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(_tasks[index]),
-                      );
-                    },
+                SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _addTask,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: textColor,
                   ),
+                  child: Text('添加'),
                 ),
               ],
             ),
-          ),
+            SizedBox(height: 20),
+            // 任务列表
+            Expanded(
+              child: ListView.builder(
+                itemCount: _tasks.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: ListTile(
+                      title: Text(_tasks[index]),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () => _deleteTask(index),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  void _deleteTask(int index) {
+    setState(() {
+      _tasks.removeAt(index);
+    });
   }
 }
 
