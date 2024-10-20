@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'theme_settings_page.dart';
+import 'time_management_page.dart'; // 确保这行导入存在
 
 // 主函数，应用程序的入口点
 void main() {
@@ -56,7 +57,7 @@ class MyHomePageState extends State<MyHomePage> {
   final List<Widget> _pages = [
     AccountingPage(),
     TodoPage(),
-    TimeManagementPage(),
+    TimeManagementPage(), // 确保这里使用的是 TimeManagementPage
     DiaryPage(),
   ];
 
@@ -404,206 +405,6 @@ class TodoPageState extends State<TodoPage> {
         ],
       ),
     );
-  }
-}
-
-// 时间管理页面
-class TimeManagementPage extends StatefulWidget {
-  @override
-  TimeManagementPageState createState() => TimeManagementPageState();
-}
-
-class TimeManagementPageState extends State<TimeManagementPage> {
-  int _remainingTime = 25 * 60; // 25分钟的倒计时
-  bool _isRunning = false; // 计时器是否在运行
-  Timer? _timer; // 计时器
-  String _currentTask = ''; // 当前任务
-  List<String> _tasks = []; // 任务列表
-  final _taskController = TextEditingController(); // 任务输入控制器
-
-  // 开始计时器
-  void _startTimer() {
-    setState(() {
-      _isRunning = true;
-    });
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_remainingTime > 0) {
-          _remainingTime--;
-        } else {
-          _timer?.cancel();
-          _isRunning = false;
-          _showCompletionDialog(); // 计时结束时显示完成对话框
-        }
-      });
-    });
-    if (_tasks.isNotEmpty) {
-      _currentTask = _tasks.removeAt(0);
-    }
-  }
-
-  // 重置计时器
-  void _resetTimer() {
-    setState(() {
-      _timer?.cancel();
-      _remainingTime = 25 * 60;
-      _isRunning = false;
-    });
-  }
-
-  // 格式化时间显示
-  String _formatTime(int seconds) {
-    int minutes = seconds ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-  }
-
-  // 添加新任务
-  void _addTask() {
-    if (_taskController.text.isNotEmpty) {
-      setState(() {
-        _tasks.add(_taskController.text);
-        _taskController.clear();
-      });
-    }
-  }
-
-  // 显示完成对话框
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('专注时间结束'),
-          content: Text('你已经完成了 $_currentTask'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('确定'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // TimeManagementPage 的 build 方法
-  @override
-  Widget build(BuildContext context) {
-    // 获取主题颜色
-    final themeColor = Theme.of(context).primaryColor;
-    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final cardColor = Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor;
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // 计时器显示和当前任务卡片
-            Card(
-              color: cardColor, // 使用主题的卡片颜色
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    Text(
-                      _formatTime(_remainingTime),
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontSize: 60,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      _currentTask.isEmpty ? '没有正在进行的任务' : '当前任务: $_currentTask',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center, // 将按钮居中对齐
-                      children: [
-                        ElevatedButton(
-                          onPressed: _isRunning ? null : _startTimer,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: themeColor,
-                            foregroundColor: textColor,
-                          ),
-                          child: Text('开始'),
-                        ),
-                        SizedBox(width: 20), // 在按钮之间添加20像素的间距
-                        ElevatedButton(
-                          onPressed: _resetTimer,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: themeColor,
-                            foregroundColor: textColor,
-                          ),
-                          child: Text('重置'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            // 任务输入区域
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _taskController,
-                    decoration: InputDecoration(
-                      labelText: '添加任务',
-                      border: UnderlineInputBorder(),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _addTask,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeColor,
-                    foregroundColor: textColor,
-                  ),
-                  child: Text('添加'),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-            // 任务列表
-            Expanded(
-              child: ListView.builder(
-                itemCount: _tasks.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(_tasks[index]),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _deleteTask(index),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _deleteTask(int index) {
-    setState(() {
-      _tasks.removeAt(index);
-    });
   }
 }
 

@@ -1,22 +1,65 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class TimeManagementPage extends StatefulWidget {
   @override
   TimeManagementPageState createState() => TimeManagementPageState();
 }
 
+class Task {
+  String name;
+  int timeSpent; // 以秒为单位
+  bool isCompleted;
+
+  Task(this.name, {this.timeSpent = 0, this.isCompleted = false});
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'timeSpent': timeSpent,
+    'isCompleted': isCompleted,
+  };
+
+  Task.fromJson(Map<String, dynamic> json)
+      : name = json['name'],
+        timeSpent = json['timeSpent'],
+        isCompleted = json['isCompleted'];
+}
+
 class TimeManagementPageState extends State<TimeManagementPage> {
   int _remainingTime = 25 * 60;
   bool _isRunning = false;
   Timer? _timer;
-  // String _currentTask = '';
-  List<String> _tasks = [];
+  List<Task> _tasks = [];
   final _taskController = TextEditingController();
+  int _currentTaskIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tasksJson = prefs.getString('tasks');
+    if (tasksJson != null) {
+      final tasksList = jsonDecode(tasksJson) as List;
+      setState(() {
+        _tasks = tasksList.map((taskJson) => Task.fromJson(taskJson)).toList();
+      });
+    }
+  }
+
+  Future<void> _saveTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tasksJson = jsonEncode(_tasks.map((task) => task.toJson()).toList());
+    await prefs.setString('tasks', tasksJson);
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 获取主题颜色
     final themeColor = Theme.of(context).primaryColor;
     final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
@@ -27,9 +70,8 @@ class TimeManagementPageState extends State<TimeManagementPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 计时器显示和当前任务卡片
             Card(
-              color: cardColor, // 使用主题的卡片颜色
+              color: cardColor,
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
@@ -42,18 +84,30 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                         color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
-                    // ... 其他卡片内容保持不变
+                    SizedBox(height: 10),
+                    Text(
+                      _currentTaskIndex != -1 ? '当前任务: ${_tasks[_currentTaskIndex].name}' : '没有正在进行的任务',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _isRunning ? null : _startTimer,
-                      child: Text(_isRunning ? '计时中' : '开始计时'),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _isRunning ? null : _startTimer,
+                          child: Text('开始'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _resetTimer,
+                          child: Text('重置'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
             SizedBox(height: 20),
-            // 任务输入区域
             Row(
               children: [
                 Expanded(
@@ -61,7 +115,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                     controller: _taskController,
                     decoration: InputDecoration(
                       labelText: '添加任务',
-                      border: OutlineInputBorder(),
+                      border: UnderlineInputBorder(), // 文字＋底部横线
                     ),
                   ),
                 ),
@@ -77,21 +131,44 @@ class TimeManagementPageState extends State<TimeManagementPage> {
               ],
             ),
             SizedBox(height: 20),
-            // 任务列表
             Expanded(
-              child: ListView.builder(
-                itemCount: _tasks.length,
-                itemBuilder: (context, index) {
+              child: ReorderableListView(
+                onReorder: (oldIndex, newIndex) {
+                  setState(() {
+                    if (oldIndex < newIndex) {
+                      newIndex -= 1;
+                    }
+                    final Task item = _tasks.removeAt(oldIndex);
+                    _tasks.insert(newIndex, item);
+                    _saveTasks();
+                  });
+                },
+                children: _tasks.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final task = entry.value;
                   return Card(
+                    key: ValueKey(task),
                     child: ListTile(
-                      title: Text(_tasks[index]),
+                      title: Text(
+                        task.name,
+                        style: TextStyle(
+                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      subtitle: LinearProgressIndicator(
+                        value: task.timeSpent / (25 * 60),
+                        backgroundColor: Colors.grey[200],
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          task.isCompleted ? Colors.green : themeColor,
+                        ),
+                      ),
                       trailing: IconButton(
                         icon: Icon(Icons.delete),
                         onPressed: () => _deleteTask(index),
                       ),
                     ),
                   );
-                },
+                }).toList(),
               ),
             ),
           ],
@@ -103,8 +180,9 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   void _addTask() {
     if (_taskController.text.isNotEmpty) {
       setState(() {
-        _tasks.add(_taskController.text);
+        _tasks.add(Task(_taskController.text));
         _taskController.clear();
+        _saveTasks();
       });
     }
   }
@@ -112,27 +190,80 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   void _deleteTask(int index) {
     setState(() {
       _tasks.removeAt(index);
+      if (_currentTaskIndex == index) {
+        _timer?.cancel();
+        _isRunning = false;
+        _currentTaskIndex = -1;
+        _remainingTime = 25 * 60;
+      } else if (_currentTaskIndex > index) {
+        _currentTaskIndex--;
+      }
+      _saveTasks();
     });
   }
 
   void _startTimer() {
+    if (_tasks.isEmpty || _tasks.every((task) => task.isCompleted)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('没有可执行的任务')),
+      );
+      return;
+    }
+
     setState(() {
       _isRunning = true;
+      if (_currentTaskIndex == -1) {
+        _currentTaskIndex = _tasks.indexWhere((task) => !task.isCompleted);
+        _remainingTime = 25 * 60;
+      }
       _timer = Timer.periodic(Duration(seconds: 1), (timer) {
         setState(() {
-          _remainingTime--;
-          if (_remainingTime <= 0) {
+          if (_remainingTime > 0) {
+            _remainingTime--;
+            _tasks[_currentTaskIndex].timeSpent++;
+            if (_tasks[_currentTaskIndex].timeSpent >= 25 * 60) {
+              _completeTask(_currentTaskIndex);
+            }
+          } else {
             _timer?.cancel();
             _isRunning = false;
+            _currentTaskIndex = -1;
           }
+          _saveTasks();
         });
       });
+    });
+  }
+
+  void _resetTimer() {
+    setState(() {
+      _timer?.cancel();
+      _remainingTime = 25 * 60;
+      _isRunning = false;
+      _currentTaskIndex = -1;
+      for (var task in _tasks) {
+        if (!task.isCompleted) {
+          task.timeSpent = 0;
+        }
+      }
+      _saveTasks();
+    });
+  }
+
+  void _completeTask(int index) {
+    setState(() {
+      _tasks[index].isCompleted = true;
+      _timer?.cancel();
+      _isRunning = false;
+      _currentTaskIndex = -1;
+      _remainingTime = 25 * 60;
+      _saveTasks();
     });
   }
 
   String _formatTime(int time) {
     int minutes = time ~/ 60;
     int seconds = time % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 }
