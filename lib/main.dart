@@ -2,87 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'theme_settings_page.dart';
+import 'package:provider/provider.dart';
+import 'providers/theme_provider.dart';
 
 // 主函数，应用程序的入口点
 void main() {
-  // 使用 runZonedGuarded 来捕获未处理的异步错误
   runZonedGuarded(() {
-    // 确保 Flutter 绑定初始化
     WidgetsFlutterBinding.ensureInitialized();
-    // 运行应用程序
-    runApp(MyApp());
+    runApp(
+      ChangeNotifierProvider(
+        create: (context) => ThemeProvider(ThemeData.light()),
+        child: MyApp(),
+      ),
+    );
   }, (error, stackTrace) {
-    // 错误处理函数，打印错误和堆栈跟踪
     print('错误: $error');
     print('堆栈跟踪: $stackTrace');
   });
 }
 
 // MyApp 类，定义应用程序的整体结构和主题
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  MyAppState createState() => MyAppState();
+}
+
+
+class MyAppState extends State<MyApp> {
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'Personal Manager',
-      // 移除调试标签
       debugShowCheckedModeBanner: false,
-      // 定义应用程序的主题
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        primaryColor: Color(0xFF4A90E2),
-        scaffoldBackgroundColor: Colors.grey[100],
-        // 定义 AppBar 主题
-        appBarTheme: AppBarTheme(
-          backgroundColor: Color(0xFF4A90E2),
-          elevation: 0,
-        ),
-        // 定义底部导航栏主题
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: Colors.white,
-          selectedItemColor: Color(0xFF4A90E2),
-          unselectedItemColor: Colors.grey[600],
-          elevation: 8,
-        ),
-        // 定义卡片主题
-        cardTheme: CardTheme(
-          color: Colors.white,
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        ),
-        // 定义输入装饰主题
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          filled: true,
-          fillColor: Colors.grey[200],
-        ),
-        // 定义凸起按钮主题
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF4A90E2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ),
-      // 设置首页
-      home: HomePage(),
+      theme: themeProvider.themeData,
+      home: MyHomePage(),
     );
   }
 }
 
 // HomePage 类，定义应用程序的主页面
-class HomePage extends StatefulWidget {
+class MyHomePage extends StatefulWidget {
   @override
-  HomePageState createState() => HomePageState();
+  MyHomePageState createState() => MyHomePageState();
 }
 
-// HomePage 的状态类
-class HomePageState extends State<HomePage> {
+class MyHomePageState extends State<MyHomePage> {
   // 当前选中的底部导航栏索引
   int _currentIndex = 0;
   // 定义页面列表
@@ -98,6 +65,21 @@ class HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Personal Manager'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ThemeSettingsPage()),
+              ).then((newThemeData) {
+                if (newThemeData != null) {
+                  Provider.of<ThemeProvider>(context, listen: false).setTheme(newThemeData);
+                }
+              });
+            },
+          ),
+        ],
       ),
       // 根据当前索引显示对应的页面
       body: _pages[_currentIndex],
@@ -491,7 +473,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('专注时间结束'),
-          content: Text('你已经完��了 $_currentTask'),
+          content: Text('你已经完成了 $_currentTask'),
           actions: <Widget>[
             TextButton(
               child: Text('确定'),
@@ -694,3 +676,4 @@ class DiaryPageState extends State<DiaryPage> {
     );
   }
 }
+
