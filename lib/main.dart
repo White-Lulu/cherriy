@@ -491,7 +491,7 @@ class DiaryPageState extends State<DiaryPage> {
   // 当前选择的心情
   String _selectedMood = '😊';
   // 可选的心情列表
-  final List<String> _moods = ['😊', '😐', '😢', '😡', '😴'];
+  final List<String> _moods = ['😊', '😐', '😢', '😎', '😴'];
 
   @override
   void initState() {
