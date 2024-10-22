@@ -197,28 +197,26 @@ class AccountingPageState extends State<AccountingPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // 交易类型下拉选择框
-                      DropdownButtonFormField<String>(
-                        value: _transactionType,
-                        items: ['收入', '支出'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _transactionType = newValue!;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          labelText: '类型'),
-                      ),
-                      SizedBox(height: 16),
                       // 金额输入框                         
                       TextFormField(
                         controller: _amountController,
-                        decoration: InputDecoration(labelText: '金额'),
+                        decoration: InputDecoration(
+                          labelText: '金额',
+                          labelStyle: TextStyle(
+                          color: const Color.fromARGB(255, 100, 100, 100), ),// 设置labelText的颜色
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color:const Color.fromARGB(255, 214, 214, 214), // 设置横线颜色
+                              width:1.5, // 设置横线粗细
+                            ),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: themeColor, // 设置获取焦点时的横线颜色
+                              width:2.0, // 设置获取焦点时的横线粗细
+                            ),
+                          ),
+                        ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -226,35 +224,136 @@ class AccountingPageState extends State<AccountingPage> {
                           }
                           return null;
                         },
+                       cursorColor:  const Color.fromARGB(255, 214, 214, 214), // 设置获取焦点时的横线颜色
                       ),
                       SizedBox(height: 16),
                       // 类别输入框
                       TextFormField(
                         controller: _categoryController,
-                        decoration: InputDecoration(labelText: '类别'),
+                        decoration: InputDecoration(
+                          labelText: '类别',
+                          labelStyle: TextStyle(
+                          color: const Color.fromARGB(255, 100, 100, 100), ),// 设置labelText的颜色
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: const Color.fromARGB(255, 214, 214, 214),
+                              width:1.5, // 设置横线粗细
+                            ),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: themeColor, // 设置获取焦点时的横线颜色
+                              width:2.0, // 设置获取焦点时的横线粗细
+                            ),
+                          ),
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return '请输入类别';
                           }
                           return null;
                         },
+                       cursorColor:  const Color.fromARGB(255, 214, 214, 214), // 设置获取焦点时的横线颜色
                       ),
                       SizedBox(height: 16),
                       // 备注输入框
                       TextFormField(
                         controller: _noteController,
-                        decoration: InputDecoration(labelText: '备注'),
+                        decoration: InputDecoration(
+                          labelText: '备注',
+                          labelStyle: TextStyle(
+                          color: const Color.fromARGB(255, 100, 100, 100), ),// 设置labelText的颜色
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: const Color.fromARGB(255, 214, 214, 214), // 设置横线颜色
+                              width:1.5, // 设置横线粗细
+                            ),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: themeColor, // 设置获取焦点时的横线颜色
+                              width:2.0, // 设置获取焦点时的横线粗细
+                            ),
+                          ),
+                        ),  
+                       cursorColor:  const Color.fromARGB(255, 214, 214, 214), // 设置获取焦点时的横线颜色
                       ),
-                      SizedBox(height:24),
-                      // 添加记录按钮
-                      ElevatedButton(
-                        onPressed: _addRecord,  
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: themeColor,
-                          foregroundColor: textColor,
-                        ),
-                        child: Text('添加记录'),
+                      SizedBox(height:28),
+                      // 交易类型选择按钮
+                      Row(
+                        children: [
+                          // 交易类型选择按钮
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _transactionType = _transactionType == '收入' ? '' : '收入';
+                                      });
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _transactionType == '收入' ? Icons.check_box : Icons.check_box_outline_blank,
+                                          color: _transactionType == '收入' ? warmColor : Colors.grey,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '收入',
+                                          style: TextStyle(
+                                            color: _transactionType == '收入' ? warmColor : Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 5),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _transactionType = _transactionType == '支出' ? '' : '支出';
+                                      });
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _transactionType == '支出' ? Icons.check_box : Icons.check_box_outline_blank,
+                                          color: _transactionType == '支出' ? coldColor : Colors.grey,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '支出',
+                                          style: TextStyle(
+                                            color: _transactionType == '支出' ? coldColor : Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 20),
+                          // 添加记录按钮
+                          ElevatedButton(
+                            onPressed: _addRecord,  
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: themeColor,
+                              foregroundColor: textColor,
+                            ),
+                            child: Text('添加记录'),
+                          ),
+                          SizedBox(width:25)
+                        ],
                       ),
+                      SizedBox(height: 8), // 与下一个输入框的间隔
                     ],
                   ),
                     ),
@@ -264,7 +363,7 @@ class AccountingPageState extends State<AccountingPage> {
                 // 显示记账记录列表
                 Expanded(
                   child: ListView.builder(
-                    itemCount: records.length,
+                    itemCount: records.length, 
                     itemBuilder: (context, index) {
                       return Card(
                         child: ListTile(
@@ -332,7 +431,7 @@ Color _getColdColor(Color color1, Color color2) {
 }
 
 bool _isWarmer(Color color1, Color color2) {
-  // 简单地比较红色和蓝色分量
+  // 简单地比较红色和蓝色分
   return (color1.red - color1.blue) > (color2.red - color2.blue);
 }
 }
@@ -402,8 +501,8 @@ class TodoPageState extends State<TodoPage> {
 
   @override
   Widget build(BuildContext context) {
-        final themeColor = Theme.of(context).primaryColor;
-        final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -411,18 +510,33 @@ class TodoPageState extends State<TodoPage> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child:
-                TextField(
-                  controller: _todoController,
-                  decoration: InputDecoration(
-                    labelText: '待办事项',
-                    suffixIcon: IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: _addTodo,
-                      color: textColor,
+              child: TextField(
+                controller: _todoController,
+                decoration: InputDecoration(
+                  labelText: '待办事项',
+                  labelStyle: TextStyle(
+                    color: const Color.fromARGB(255, 100, 100, 100),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: const Color.fromARGB(255, 214, 214, 214),
+                      width: 1.5,
                     ),
                   ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                      width: 2.0,
+                    ),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.add),
+                    onPressed: _addTodo,
+                    color: textColor,
+                  ),
                 ),
+                cursorColor: const Color.fromARGB(255, 214, 214, 214),
+              ),
             ),
           ),
           SizedBox(height: 16),
@@ -453,7 +567,7 @@ class TodoPageState extends State<TodoPage> {
                           checkColor:Theme.of(context).cardColor,
                           side: BorderSide(
                             color: todos[index]['completed'] ? textColor : themeColor,
-                            width: 2.0,
+                            width:1.5,
                           ),
                         ),
                         // 删除按钮
@@ -562,17 +676,33 @@ class DiaryPageState extends State<DiaryPage> {
             controller: _diaryController,
             decoration: InputDecoration(
               labelText: '今日日记',
+              labelStyle: TextStyle(
+                color: const Color.fromARGB(255, 100, 100, 100),
+              ),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: const Color.fromARGB(255, 214, 214, 214),
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                  width: 2.0,
+                ),
+              ),
               suffixIcon: IconButton(
-                icon: 
-                Icon(
+                icon: Icon(
                   Icons.save,
-                color:Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                  color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
                 ),
                 onPressed: _addDiary,
               ),
             ),
+            cursorColor: const Color.fromARGB(255, 214, 214, 214),
             maxLines: 3,
           ),
+          SizedBox(height:10),
           // 日记列表
           Expanded(
             child: ListView.builder(

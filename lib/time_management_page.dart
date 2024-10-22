@@ -126,8 +126,24 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                     controller: _taskController,
                     decoration: InputDecoration(
                       labelText: '添加任务',
+              labelStyle: TextStyle(
+                color: const Color.fromARGB(255, 100, 100, 100),
+              ),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: const Color.fromARGB(255, 214, 214, 214),
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                  width: 2.0,
+                ),
+              ),
                       border: UnderlineInputBorder(), // 文字＋底部横线
                     ),
+                    cursorColor:  const Color.fromARGB(255, 214, 214, 214),
                   ),
                 ),
                 SizedBox(width: 16),
