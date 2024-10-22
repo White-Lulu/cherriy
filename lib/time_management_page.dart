@@ -63,6 +63,8 @@ class TimeManagementPageState extends State<TimeManagementPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+    final warmColor = _getWarmColor(Theme.of(context).primaryColor, textColor);
+    final coldColor = _getColdColor(Theme.of(context).primaryColor, textColor);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -118,6 +120,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
             SizedBox(height: 20),
             Row(
               children: [
+                SizedBox(width:8),
                 Expanded(
                   child: TextField(
                     controller: _taskController,
@@ -165,9 +168,9 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                       ),
                       subtitle: LinearProgressIndicator(
                         value: task.timeSpent / (25 * 60),
-                        backgroundColor: Colors.grey[200],
+                        backgroundColor: const Color.fromARGB(255, 214, 214, 214),
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          task.isCompleted ? Colors.green : themeColor,
+                          task.isCompleted ? warmColor : coldColor,
                         ),
                       ),
                       trailing: IconButton(
@@ -275,4 +278,18 @@ class TimeManagementPageState extends State<TimeManagementPage> {
     int seconds = time % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
+
+     // 在类的其他地方添加这些辅助方法
+    Color _getWarmColor(Color color1, Color color2) {
+      return _isWarmer(color1, color2) ? color1 : color2;
+    }
+
+    Color _getColdColor(Color color1, Color color2) {
+      return _isWarmer(color1, color2) ? color2 : color1;
+    }
+
+    bool _isWarmer(Color color1, Color color2) {
+      // 简单地比较红色和蓝色分量
+      return (color1.red - color1.blue) > (color2.red - color2.blue);
+    }
 }

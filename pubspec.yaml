@@ -11,6 +11,8 @@ environment:
 dependencies: # 依赖项*3
   flutter:
     sdk: flutter
+  
+  intl: ^0.17.0
 
   provider: ^6.0.0 # 一个用于状态管理的包
 
@@ -26,3 +28,8 @@ dev_dependencies: # 开发依赖项
 
 flutter:
   uses-material-design: true # 使用Material Design风格
+
+flutter_icons:
+  android: "launcher_icon" 
+  ios: false
+  image_path: "assets/icon/icon.png"

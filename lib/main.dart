@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'theme_settings_page.dart';
 import 'time_management_page.dart'; // 确保这行导入存在
+import 'package:intl/intl.dart';
 
 // 主函数，应用程序的入口点
 void main() {
@@ -68,7 +69,7 @@ class MyHomePageState extends State<MyHomePage> {
         title: Text('Cherriy (o^^o)♪'),
         actions: [
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.palette),
             onPressed: () {
               // 导航到主题设置页面
               Navigator.push(
@@ -88,14 +89,14 @@ class MyHomePageState extends State<MyHomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        // 移除这些颜色设置，��主题控制颜色
+        // 移除这些颜色设置，主题控制颜色
         // backgroundColor: Colors.blue,
         // selectedItemColor: Colors.white,
         // unselectedItemColor: Colors.white70,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: '记账'),
           BottomNavigationBarItem(icon: Icon(Icons.check_box), label: '代办'),
-          BottomNavigationBarItem(icon: Icon(Icons.access_time), label: '时间管理'),
+          BottomNavigationBarItem(icon: Icon(Icons.access_time), label: '计时'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: '日记'),
         ],
       ),
@@ -179,6 +180,8 @@ class AccountingPageState extends State<AccountingPage> {
     // 获取主题颜色
     final themeColor = Theme.of(context).primaryColor;
     final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final warmColor = _getWarmColor(Theme.of(context).primaryColor, textColor);
+    final coldColor = _getColdColor(Theme.of(context).primaryColor, textColor);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -208,10 +211,11 @@ class AccountingPageState extends State<AccountingPage> {
                             _transactionType = newValue!;
                           });
                         },
-                        decoration: InputDecoration(labelText: '类型'),
+                        decoration: InputDecoration(
+                          labelText: '类型'),
                       ),
                       SizedBox(height: 16),
-                      // 金额输入框
+                      // 金额输入框                         
                       TextFormField(
                         controller: _amountController,
                         decoration: InputDecoration(labelText: '金额'),
@@ -244,12 +248,12 @@ class AccountingPageState extends State<AccountingPage> {
                       SizedBox(height:24),
                       // 添加记录按钮
                       ElevatedButton(
-                        onPressed: _addRecord,
-                        child: Text('添加记录'),
+                        onPressed: _addRecord,  
                         style: ElevatedButton.styleFrom(
                           backgroundColor: themeColor,
                           foregroundColor: textColor,
                         ),
+                        child: Text('添加记录'),
                       ),
                     ],
                   ),
@@ -264,12 +268,45 @@ class AccountingPageState extends State<AccountingPage> {
                     itemBuilder: (context, index) {
                       return Card(
                         child: ListTile(
-                            leading: Icon(
-                            records[index]['type'] == '收入' ? Icons.arrow_upward : Icons.arrow_downward,
-                            color: records[index]['type'] == '收入' ? Colors.green : Colors.red,
+                          leading: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                records[index]['type'] == '收入' ? Icons.north_east : Icons.south_west,
+                                color: records[index]['type'] == '收入' ?  warmColor : coldColor,
+                              ),
+                            ],
                           ),
-                          title: Text('金额: ${records[index]['amount']}'),
-                          subtitle: Text('类别: ${records[index]['category']}\n备注: ${records[index]['note']}'),
+                          title: Row(
+                            children: [
+                              Text('${records[index]['amount']}',
+                              style: TextStyle(
+                                color: records[index]['type'] == '收入' ?  warmColor : coldColor,
+                                fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.category, size: 16),
+                                  SizedBox(width: 4),
+                                  Text('${records[index]['category']}'),
+                                ],
+                              ),
+                              SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.note, size: 16),
+                                  SizedBox(width: 4),
+                                  Text('${records[index]['note']}'),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -279,6 +316,19 @@ class AccountingPageState extends State<AccountingPage> {
           ),
     );
   }
+  // 在类的其他地方添加这些辅助方法
+Color _getWarmColor(Color color1, Color color2) {
+  return _isWarmer(color1, color2) ? color1 : color2;
+}
+
+Color _getColdColor(Color color1, Color color2) {
+  return _isWarmer(color1, color2) ? color2 : color1;
+}
+
+bool _isWarmer(Color color1, Color color2) {
+  // 简单地比较红色和蓝色分量
+  return (color1.red - color1.blue) > (color2.red - color2.blue);
+}
 }
 
 // Todo 页面
@@ -455,9 +505,11 @@ class DiaryPageState extends State<DiaryPage> {
   // 添加新的日记条目
   void _addDiary() {
     if (_diaryController.text.isNotEmpty) {
+      final now = DateTime.now();
+      final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
       setState(() {
         diaries.add({
-          'date': DateTime.now().toString(),
+          'date': formattedDate,
           'content': _diaryController.text,
           'mood': _selectedMood,
         });
@@ -503,12 +555,15 @@ class DiaryPageState extends State<DiaryPage> {
             child: ListView.builder(
               itemCount: diaries.length,
               itemBuilder: (context, index) {
+                final diary = diaries[index];
+                final date = diary['date'] as String;
+                final formattedDate = date.length > 19 ? date.substring(0, 19) : date;
                 return Card(
                   margin: EdgeInsets.symmetric(vertical: 8),
                   child: ListTile(
-                    leading: Text(diaries[index]['mood'] ?? '😐', style: TextStyle(fontSize: 24)),
-                    title: Text(diaries[index]['content'] ?? ''),
-                    subtitle: Text(diaries[index]['date'] ?? ''),
+                    leading: Text(diary['mood'] ?? '😐', style: TextStyle(fontSize: 24)),
+                    title: Text(diary['content'] ?? ''),
+                    subtitle: Text(formattedDate),
                   ),
                 );
               },
