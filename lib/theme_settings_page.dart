@@ -36,16 +36,17 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       appBar: AppBar(title: Text('主题设置')),
       body: ListView(
         children: [
-          _buildColorPicker('主色调', primaryColor, (color) => setState(() => primaryColor = color)),
+          _buildColorPicker('主题色Ⅰ', primaryColor, (color) => setState(() => primaryColor = color)),
+          _buildColorPicker('主题色Ⅱ', themeTextColor, (color) => setState(() => themeTextColor = color)),
+          // _buildColorPicker('主题色Ⅲ', seconda. , (color) => setState(() => thirdColor = color) ),
           _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
           _buildColorPicker('卡片颜色', cardColor, (color) => setState(() => cardColor = color)),
-          _buildColorPicker('主题字体色', themeTextColor, (color) => setState(() => themeTextColor = color)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _saveTheme,
-        child: Icon(Icons.save, color: themeTextColor),
         backgroundColor: primaryColor,
+        child: Icon(Icons.save, color: themeTextColor),
       ),
     );
   }

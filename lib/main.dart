@@ -177,7 +177,7 @@ class AccountingPageState extends State<AccountingPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取主题颜色
+    // 获取主题颜色 (声明常量)
     final themeColor = Theme.of(context).primaryColor;
     final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     final warmColor = _getWarmColor(Theme.of(context).primaryColor, textColor);
@@ -292,7 +292,10 @@ class AccountingPageState extends State<AccountingPage> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.category, size: 16),
+                                  Icon(
+                                    Icons.category, size: 16,
+                                    color:const Color.fromARGB(255, 214, 214, 214),
+                                    ),
                                   SizedBox(width: 4),
                                   Text('${records[index]['category']}'),
                                 ],
@@ -300,7 +303,10 @@ class AccountingPageState extends State<AccountingPage> {
                               SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(Icons.note, size: 16),
+                                  Icon(
+                                    Icons.note, size: 16,
+                                    color:const Color.fromARGB(255, 214, 214, 214),
+                                    ),
                                   SizedBox(width: 4),
                                   Text('${records[index]['note']}'),
                                 ],
@@ -340,6 +346,7 @@ class TodoPage extends StatefulWidget {
 class TodoPageState extends State<TodoPage> {
   // 用于控制输入的待办事项文本
   final _todoController = TextEditingController();
+  
   // 存储待办事项的列表
   List<Map<String, dynamic>> todos = [];
 
@@ -395,6 +402,8 @@ class TodoPageState extends State<TodoPage> {
 
   @override
   Widget build(BuildContext context) {
+        final themeColor = Theme.of(context).primaryColor;
+        final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -410,6 +419,7 @@ class TodoPageState extends State<TodoPage> {
                     suffixIcon: IconButton(
                       icon: Icon(Icons.add),
                       onPressed: _addTodo,
+                      color: textColor,
                     ),
                   ),
                 ),
@@ -439,10 +449,19 @@ class TodoPageState extends State<TodoPage> {
                         Checkbox(
                           value: todos[index]['completed'],
                           onChanged: (value) => _toggleComplete(index),
+                          activeColor: textColor,
+                          checkColor:Theme.of(context).cardColor,
+                          side: BorderSide(
+                            color: todos[index]['completed'] ? textColor : themeColor,
+                            width: 2.0,
+                          ),
                         ),
                         // 删除按钮
                         IconButton(
-                          icon: Icon(Icons.delete),
+                          icon: Icon(
+                            Icons.delete,
+                            color: const Color.fromARGB(255, 214, 214, 214),
+                            ),
                           onPressed: () => _deleteTodo(index),
                         ),
                       ],
@@ -544,7 +563,11 @@ class DiaryPageState extends State<DiaryPage> {
             decoration: InputDecoration(
               labelText: '今日日记',
               suffixIcon: IconButton(
-                icon: Icon(Icons.save),
+                icon: 
+                Icon(
+                  Icons.save,
+                color:Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+                ),
                 onPressed: _addDiary,
               ),
             ),

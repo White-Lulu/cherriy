@@ -174,7 +174,10 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                         ),
                       ),
                       trailing: IconButton(
-                        icon: Icon(Icons.delete),
+                        icon: Icon(
+                          Icons.delete,
+                          color: const Color.fromARGB(255, 214, 214, 214),
+                          ),
                         onPressed: () => _deleteTask(index),
                       ),
                     ),
