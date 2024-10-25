@@ -7,6 +7,9 @@ import 'providers/theme_provider.dart';
 import 'theme_settings_page.dart';
 import 'time_management_page.dart'; // 确保这行导入存在
 import 'package:intl/intl.dart';
+// import 'dart:io';
+
+
 
 // 主函数，应用程序的入口点
 void main() {
@@ -78,8 +81,8 @@ class MyHomePageState extends State<MyHomePage> {
               );
             },
           ),
-        ],
-      ),
+                  ],
+                ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -135,20 +138,16 @@ class AccountingPageState extends State<AccountingPage> {
   Future<void> _loadRecords() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedRecords = prefs.getString('accountingRecords');
-    if (savedRecords != null) {
-      setState(() {
-        // 解码JSON并转换为List<Map<String, String>>
-        records = (jsonDecode(savedRecords) as List<dynamic>)
-            .map((item) => Map<String, String>.from(item))
-            .toList();
-        _isLoading = false;
-      });
-    } else { 
-      setState(() {
-        _isLoading = false;
-      });
+    setState(() {
+      // 解码JSON并转换为List<Map<String, String>>
+      records = savedRecords != null
+          ? (jsonDecode(savedRecords) as List<dynamic>)
+              .map((item) => Map<String, String>.from(item))
+              .toList()
+          : [];
+      _isLoading = false;
+    });
     }
-  }
 
   // 保存记账记录到本地存储
   Future<void> _saveRecords() async {
@@ -348,7 +347,7 @@ class AccountingPageState extends State<AccountingPage> {
                               backgroundColor: themeColor,
                               foregroundColor: textColor,
                             ),
-                            child: Text('添加记录'),
+                            child: Text('添加记'),
                           ),
                           SizedBox(width:25)
                         ],
@@ -459,12 +458,12 @@ class TodoPageState extends State<TodoPage> {
   void _loadTodos() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedTodos = prefs.getString('todoList');
-    if (savedTodos != null) {
-      setState(() {
-        todos = List<Map<String, dynamic>>.from(jsonDecode(savedTodos));
-      });
+    setState(() {
+      todos = savedTodos != null
+          ? List<Map<String, dynamic>>.from(jsonDecode(savedTodos))
+          : [];
+    });
     }
-  }
 
   // 保存待办事项到本地存储
   void _saveTodos() async {
@@ -605,7 +604,7 @@ class DiaryPageState extends State<DiaryPage> {
   // 当前选择的心情
   String _selectedMood = '😊';
   // 可选的心情列表
-  final List<String> _moods = ['😊', '😐', '😢', '😎', '😴'];
+  final List<String> _moods = ['😊', '😐', '😢', '😎', '😴','🤣'];
 
   @override
   void initState() {
@@ -617,14 +616,14 @@ class DiaryPageState extends State<DiaryPage> {
   void _loadDiaries() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedDiaries = prefs.getString('diaries');
-    if (savedDiaries != null) {
-      setState(() {
-        diaries = List<Map<String, String>>.from(
-          (jsonDecode(savedDiaries) as List).map((item) => Map<String, String>.from(item))
-        );
-      });
+    setState(() {
+      diaries = savedDiaries != null
+          ? List<Map<String, String>>.from(
+              (jsonDecode(savedDiaries) as List).map((item) => Map<String, String>.from(item))
+            )
+          : [];
+    });
     }
-  }
 
   // 保存日记到本地存储
   void _saveDiaries() async {
@@ -727,4 +726,12 @@ class DiaryPageState extends State<DiaryPage> {
     );
   }
 }
+
+
+
+
+
+
+
+
 
