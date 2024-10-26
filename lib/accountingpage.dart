@@ -34,6 +34,7 @@ class AccountingPageState extends State<AccountingPage> {
     {'emoji': '🛒', 'label': '购物', 'color': Colors.orange},
     {'emoji': '🎉', 'label': '娱乐', 'color': Colors.purple},
   ];
+  bool _isGridView = true; // 新增：用于跟踪当前是否为网格视图
 
   @override
   void initState() {
@@ -182,13 +183,19 @@ class AccountingPageState extends State<AccountingPage> {
     }
   }
 
+  // 新增：切换视图模式的方法
+  void _toggleViewMode() {
+    setState(() {
+      _isGridView = !_isGridView;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 获取主题颜色 (声明常量)
-    final themeColor = Theme.of(context).primaryColor; // 获取主题颜色
-    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black; // 获取文本颜色
-    final warmColor = _getWarmColor(Theme.of(context).primaryColor, textColor); // 获取暖色
-    final coldColor = _getColdColor(Theme.of(context).primaryColor, textColor); // 获取冷色
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final warmColor = _getWarmColor(themeColor, textColor);
+    final coldColor = _getColdColor(themeColor, textColor);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -359,122 +366,243 @@ class AccountingPageState extends State<AccountingPage> {
                   ),
                   ),
                 SizedBox(height: 16),
-                // 修改这里：将 ListView.builder 替换为 GridView.builder
-                Expanded(
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // 设置为两列
-                      childAspectRatio: 1.5, // 调整宽高比
-                      crossAxisSpacing: 10, // 列间距
-                      mainAxisSpacing: 10, // 行间距
+                // 新增：视���切换图标
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+                      onPressed: _toggleViewMode,
+                      tooltip: _isGridView ? '切换到列表视图' : '切换到网格视图',
                     ),
-                    itemCount: records.length,
-                    itemBuilder: (context, index) {
-                      List<String> recordCategories = [];
-                      try {
-                        recordCategories = (jsonDecode(records[index]['categories'] ?? '[]') as List).cast<String>();
-                      } catch (e) {
-                        print('Error decoding categories: $e');
-                      }
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Icon(
-                                    records[index]['type'] == '收入' ? Icons.north_east : Icons.south_west,
-                                    color: records[index]['type'] == '收入' ? warmColor : coldColor,
-                                  ),
-                                  Text(
-                                    '${records[index]['amount']}',
-                                    style: TextStyle(
-                                      color: records[index]['type'] == '收入' ? warmColor : coldColor,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 4),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Wrap(
-                                        spacing: 4,
-                                        runSpacing: 4,
-                                        children: recordCategories.map((categoryString) {
-                                          var category = categories.firstWhere(
-                                            (c) => '${c['emoji']}${c['label']}' == categoryString,
-                                            orElse: () {
-                                              // 如果找不到匹配的类别，解析 categoryString
-                                              String emoji = categoryString.characters.first;
-                                              String label = categoryString.characters.skip(1).string;
-                                              return {
-                                                'emoji': emoji,
-                                                'label': label,
-                                                'color': _getRandomColor(), // 使用随机颜色或默认颜色
-                                              };
-                                            },
-                                          );
-                                          return Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: (category['color'] as Color).withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(5),
-                                              border: Border.all(
-                                                color: Theme.of(context).cardColor,
-                                                width: 0.5,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(category['emoji'], style: TextStyle(fontSize: 10)),
-                                                SizedBox(width: 2),
-                                                Text(category['label'], style: TextStyle(fontSize: 10)),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.note,
-                                            size: 16,
-                                            color: const Color.fromARGB(255, 214, 214, 214),
-                                          ),
-                                          SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              '${records[index]['note']}',
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 2,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                  ],
+                ),
+                SizedBox(height: 8),
+                // 账单列表
+                Expanded(
+                  child: _isGridView
+                      ? GridView.builder(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.8,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                          itemCount: records.length,
+                          itemBuilder: _buildRecordItem,
+                        )
+                      : ListView.builder(
+                          itemCount: records.length,
+                          itemBuilder: (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: _buildRecordItem(context, index),
                           ),
                         ),
-                      );
-                    },
-                  ),
                 ),
             ],
           ),
     );
   }
+
+  // 新增：构建记录项的方法，用于网格和列表视图
+  Widget _buildRecordItem(BuildContext context, int index) {
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final warmColor = _getWarmColor(themeColor, textColor);
+    final coldColor = _getColdColor(themeColor, textColor);
+    
+    List<String> recordCategories = [];
+    try {
+      recordCategories = (jsonDecode(records[index]['categories'] ?? '[]') as List).cast<String>();
+    } catch (e) {
+      print('Error decoding categories: $e');
+    }
+
+    if (_isGridView) {
+      // 网格视图的布局
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(
+                    records[index]['type'] == '收入' ? Icons.north_east : Icons.south_west,
+                    color: records[index]['type'] == '收入' ? warmColor : coldColor,
+                  ),
+                  Text(
+                    '${records[index]['amount']}',
+                    style: TextStyle(
+                      color: records[index]['type'] == '收入' ? warmColor : coldColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: recordCategories.map((categoryString) {
+                  var category = categories.firstWhere(
+                    (c) => '${c['emoji']}${c['label']}' == categoryString,
+                    orElse: () {
+                      String emoji = categoryString.characters.first;
+                      String label = categoryString.characters.skip(1).string;
+                      return {
+                        'emoji': emoji,
+                        'label': label,
+                        'color': _getRandomColor(),
+                      };
+                    },
+                  );
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (category['color'] as Color).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: Theme.of(context).cardColor,
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(category['emoji'], style: TextStyle(fontSize: 10)),
+                        SizedBox(width: 2),
+                        Text(category['label'], style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              if (records[index]['note']?.isNotEmpty ?? false) ...[
+                SizedBox(height: 8),
+                Row(
+                children: [
+                  Icon(Icons.note, size: 16, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${records[index]['note']}',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+              ],
+            ],
+          ),
+        ),
+      );
+    } else {
+      // 列表视图的布局（保持原来的样式）
+      return Card(
+        child: ListTile(
+                          leading: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                records[index]['type'] == '收入' ? Icons.north_east : Icons.south_west,
+                                color: records[index]['type'] == '收入' ?  warmColor : coldColor,
+                              ),
+                            ],
+                          ),
+                          title: Row(
+                            children: [
+                              Text('${records[index]['amount']}',
+                              style: TextStyle(
+                                color: records[index]['type'] == '收入' ?  warmColor : coldColor,
+                                fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.category,
+                                    size: 16,
+                                    color: const Color.fromARGB(255, 214, 214, 214),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Expanded(
+                                    child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: recordCategories.map((categoryString) {
+                  var category = categories.firstWhere(
+                    (c) => '${c['emoji']}${c['label']}' == categoryString,
+                    orElse: () {
+                      // 如果找不到匹配的类别，解析 categoryString
+                      String emoji = categoryString.characters.first;
+                      String label = categoryString.characters.skip(1).string;
+                      return {
+                        'emoji': emoji,
+                        'label': label,
+                        'color': _getRandomColor(), // 使用随机颜色或默认颜色
+                      };
+                    },
+                  );
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (category['color'] as Color).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: Theme.of(context).cardColor,
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(category['emoji'], style: TextStyle(fontSize: 10)),
+                        SizedBox(width: 2),
+                        Text(category['label'], style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+                                  ),
+            ],
+                              ),
+            if (records[index]['note']?.isNotEmpty ?? false) ...[
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.note, size: 16, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${records[index]['note']}',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+        ),
+      );
+    }
+  }
+
   // 在类的其他地方添加这些辅助方法
 Color _getWarmColor(Color color1, Color color2) {
   return _isWarmer(color1, color2) ? color1 : color2;
@@ -546,3 +674,4 @@ bool _isWarmer(Color color1, Color color2) {
     return Color((math.Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0);
   }
 }
+
