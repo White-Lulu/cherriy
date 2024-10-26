@@ -115,7 +115,7 @@ class AccountingPageState extends State<AccountingPage> {
   void _loadCategories() {
     if (!mounted) return;
     setState(() {
-      // 只加���非临时类别
+      // 只加非临时类别
       categories = themeProvider.categories.where((category) => category['isTemporary'] != true).toList();
     });
   }
@@ -359,10 +359,16 @@ class AccountingPageState extends State<AccountingPage> {
                   ),
                   ),
                 SizedBox(height: 16),
-                // 显示记账记录列表
+                // 修改这里：将 ListView.builder 替换为 GridView.builder
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: records.length, 
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, // 设置为两列
+                      childAspectRatio: 1.5, // 调整宽高比
+                      crossAxisSpacing: 10, // 列间距
+                      mainAxisSpacing: 10, // 行间距
+                    ),
+                    itemCount: records.length,
                     itemBuilder: (context, index) {
                       List<String> recordCategories = [];
                       try {
@@ -371,93 +377,92 @@ class AccountingPageState extends State<AccountingPage> {
                         print('Error decoding categories: $e');
                       }
                       return Card(
-                        child: ListTile(
-                          leading: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                records[index]['type'] == '收入' ? Icons.north_east : Icons.south_west,
-                                color: records[index]['type'] == '收入' ?  warmColor : coldColor,
-                              ),
-                            ],
-                          ),
-                          title: Row(
-                            children: [
-                              Text('${records[index]['amount']}',
-                              style: TextStyle(
-                                color: records[index]['type'] == '收入' ?  warmColor : coldColor,
-                                fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                          subtitle: Column(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: 4),
-                              // 添加分类图标和调整后的 chip
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Icon(
-                                    Icons.category,
-                                    size: 16,
-                                    color: const Color.fromARGB(255, 214, 214, 214),
+                                    records[index]['type'] == '收入' ? Icons.north_east : Icons.south_west,
+                                    color: records[index]['type'] == '收入' ? warmColor : coldColor,
                                   ),
-                                  SizedBox(width: 4),
-                                  Expanded(
-                                    child: Wrap(
-                                      spacing: 4,
-                                      runSpacing: 4,
-                                      children: recordCategories.map((categoryString) {
-                                        var category = categories.firstWhere(
-                                          (c) => '${c['emoji']}${c['label']}' == categoryString,
-                                          orElse: () {
-                                            // 如果找不到匹配的类别，解析 categoryString
-                                            String emoji = categoryString.characters.first;
-                                            String label = categoryString.characters.skip(1).string;
-                                            return {
-                                              'emoji': emoji,
-                                              'label': label,
-                                              'color': _getRandomColor(), // 使用随机颜色或默认颜色
-                                            };
-                                          },
-                                        );
-                                        return Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: (category['color'] as Color).withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(5),
-                                            border: Border.all(
-                                              color: Theme.of(context).cardColor,
-                                              width: 0.5,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(category['emoji'], style: TextStyle(fontSize: 10)),
-                                              SizedBox(width: 2),
-                                              Text(category['label'], style: TextStyle(fontSize: 10)),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
+                                  Text(
+                                    '${records[index]['amount']}',
+                                    style: TextStyle(
+                                      color: records[index]['type'] == '收入' ? warmColor : coldColor,
+                                      fontSize: 18,
                                     ),
                                   ),
                                 ],
                               ),
                               SizedBox(height: 4),
-                              // 备注行保持不变
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.note,
-                                    size: 16,
-                                    color: const Color.fromARGB(255, 214, 214, 214),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Wrap(
+                                        spacing: 4,
+                                        runSpacing: 4,
+                                        children: recordCategories.map((categoryString) {
+                                          var category = categories.firstWhere(
+                                            (c) => '${c['emoji']}${c['label']}' == categoryString,
+                                            orElse: () {
+                                              // 如果找不到匹配的类别，解析 categoryString
+                                              String emoji = categoryString.characters.first;
+                                              String label = categoryString.characters.skip(1).string;
+                                              return {
+                                                'emoji': emoji,
+                                                'label': label,
+                                                'color': _getRandomColor(), // 使用随机颜色或默认颜色
+                                              };
+                                            },
+                                          );
+                                          return Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: (category['color'] as Color).withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(5),
+                                              border: Border.all(
+                                                color: Theme.of(context).cardColor,
+                                                width: 0.5,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(category['emoji'], style: TextStyle(fontSize: 10)),
+                                                SizedBox(width: 2),
+                                                Text(category['label'], style: TextStyle(fontSize: 10)),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.note,
+                                            size: 16,
+                                            color: const Color.fromARGB(255, 214, 214, 214),
+                                          ),
+                                          SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              '${records[index]['note']}',
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(width: 4),
-                                  Text('${records[index]['note']}'),
-                                ],
+                                ),
                               ),
                             ],
                           ),
