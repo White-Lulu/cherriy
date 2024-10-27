@@ -57,7 +57,7 @@ class AccountingPageState extends State<AccountingPage> {
 
   // 添加一个新的状态变量用于存储筛选后的记录
   List<Map<String, String>> filteredRecords = [];
-  bool isFiltered = false;
+  bool isFiltered = false; 
 
   @override
   void initState() {
