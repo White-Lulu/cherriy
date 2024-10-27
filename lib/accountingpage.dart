@@ -36,11 +36,28 @@ class AccountingPageState extends State<AccountingPage> {
     {'emoji': '🛒', 'label': '购物', 'color': Colors.orange},
     {'emoji': '🎉', 'label': '娱乐', 'color': Colors.purple},
   ];
-  bool _isGridView = true; // 新增：用于跟踪当前是否为网格视图
+  // 修改状态变量，将 bool 改为 int
+  // bool _isGridView = true; // 删除这行
+  int _viewMode = 0; // 0: 列表视图, 1: 2列网格, 2: 3列网格
   // 在 AccountingPageState 类中添加一个新的状态变量
   bool _isDeleteMode = false;
   // 在 AccountingPageState 类中添加新的状态变量
-  bool _isAscending = true; // true 表示正序（旧到新），false 表示倒序（新到旧）
+  bool _isAmountAscending = true;
+  bool _isTimeAscending = true;
+  // 在 AccountingPageState 类中添加新的状态变量
+  List<String> selectedFilterCategories = []; // 用于存储筛选选中的类别
+  // 在 AccountingPageState 类中添加的状态变量
+  String _sortType = 'time'; // 'time', 'amount'
+  // 在 AccountingPageState 类中添加新的状态变量
+  String? selectedTransactionType;
+
+  // 添加 FocusNode
+  final FocusNode _amountFocusNode = FocusNode();
+  final FocusNode _noteFocusNode = FocusNode();
+
+  // 添加一个新的状态变量用于存储筛选后的记录
+  List<Map<String, String>> filteredRecords = [];
+  bool isFiltered = false;
 
   @override
   void initState() {
@@ -53,7 +70,9 @@ class AccountingPageState extends State<AccountingPage> {
 
   @override
   void dispose() {
-    // 移除监听器
+    // 在 dispose 中释放 FocusNode
+    _amountFocusNode.dispose();
+    _noteFocusNode.dispose();
     themeProvider.removeListener(_onCategoriesChanged);
     super.dispose();
   }
@@ -100,19 +119,20 @@ class AccountingPageState extends State<AccountingPage> {
           'categories': jsonEncode(selectedCategories),
           'note': _noteController.text,
           'type': _transactionType,
+          'timestamp': DateTime.now().toIso8601String(),
         });
+        
+        // 清除输入
         _amountController.clear();
         _noteController.clear();
-
+        
+        // 清除选中的类别
+        selectedCategories.clear();  // 添加这行，清除已选中的类别
+        
         // 移除临时类别
         categories.removeWhere((category) => category['isTemporary'] == true);
-
-        // 从 selectedCategories 中移除不再存在于 categories 中的类别
-        selectedCategories.removeWhere((categoryString) {
-          return !categories.any((category) =>
-              '${category['emoji']}${category['label']}' == categoryString);
-        });
       });
+      
       _saveRecords();
       // 更新 ThemeProvider 中的类别列表
       themeProvider.setCategories(categories);
@@ -134,9 +154,10 @@ class AccountingPageState extends State<AccountingPage> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext context) {
-        String emoji = '😀';
+        String emoji = '';  // 初始化为空字符串
         String label = '';
-        Color color = Colors.blue;
+        Color color = Theme.of(context).primaryColor;  // 使用主题色作为默认颜色
+        
         return AlertDialog(
           title: Text('添加自定义类别'),
           content: Column(
@@ -147,7 +168,7 @@ class AccountingPageState extends State<AccountingPage> {
                 onChanged: (value) => emoji = value,
               ),
               TextField(
-                decoration: InputDecoration(labelText: '标签'),
+                decoration: InputDecoration(labelText: '类别名称'),
                 onChanged: (value) => label = value,
               ),
               ElevatedButton(
@@ -167,13 +188,16 @@ class AccountingPageState extends State<AccountingPage> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text('添加'),
+              child: Text('确定'),
               onPressed: () {
-                Navigator.of(context).pop({
-                  'emoji': emoji,
-                  'label': label,
-                  'color': color,
-                });
+                if (label.isNotEmpty) {
+                  Navigator.of(context).pop({
+                    'emoji': emoji,
+                    'label': label,
+                    'color': color,
+                    'isTemporary': true,
+                  });
+                }
               },
             ),
           ],
@@ -182,28 +206,248 @@ class AccountingPageState extends State<AccountingPage> {
     );
 
     if (result != null) {
-      result['isTemporary'] = true; // 标记为临时类别
       setState(() {
-        categories.add(result); // 添加到类别列表
-        selectedCategories
-            .add('${result['emoji']}${result['label']}'); // 添加到选中的类别
+        categories.add(result);
+        // 添加到选中的类别时，只使用emoji和label的组合
+        selectedCategories.add('${result['emoji']}${result['label']}');
       });
-      // 不需要同步到 ThemeProvider，因为这是临时类别
     }
   }
 
   // 新增：切换视图模式的方法
   void _toggleViewMode() {
     setState(() {
-      _isGridView = !_isGridView;
+      _viewMode = (_viewMode + 1) % 3; // 在0、1、2之间循环
     });
   }
 
   // 添加排序方法
-  void _toggleSortOrder() {
+  void toggleSortOrder() {
     setState(() {
-      _isAscending = !_isAscending;
+      _isAmountAscending = !_isAmountAscending;
+      _isTimeAscending = !_isTimeAscending;
       records = records.reversed.toList();
+    });
+    _saveRecords();
+  }
+
+  // 添加筛选方法
+  void _showFilterBottomSheet() {  
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final warmColor = _getWarmColor(themeColor, textColor);
+    final coldColor = _getColdColor(themeColor, textColor);
+    FocusScope.of(context).unfocus();
+
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('筛选',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedFilterCategories.clear();
+                            selectedTransactionType = null;
+                          });
+                          Navigator.pop(context);
+                          _applyFilter();
+                        },
+                        child: Text('清除筛选'),
+                      ),
+                    ],
+                  ),
+                  Divider(),
+                  Text('收支类型',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      FilterChip(
+                        label: Text('收入'),
+                        selected: selectedTransactionType == '收入',
+                        onSelected: (bool selected) {
+                          setState(() {
+                            // 如果已经选中了"收入"，再次点击就取消选择
+                            if (selectedTransactionType == '收入') {
+                              selectedTransactionType = null;
+                            } else {
+                              // 否则选择"收入"
+                              selectedTransactionType = '收入';
+                            }
+                          });
+                        },
+                        backgroundColor: warmColor.withOpacity(0.1),
+                        selectedColor: warmColor.withOpacity(0.3),
+                      ),
+                      SizedBox(width: 8),
+                      FilterChip(
+                        label: Text('支出'),
+                        selected: selectedTransactionType == '支出',
+                        onSelected: (bool selected) {
+                          setState(() {
+                            // 如果已经选中了"支出"，再次点击就取消选择
+                            if (selectedTransactionType == '支出') {
+                              selectedTransactionType = null;
+                            } else {
+                              // 否则选择"支出"
+                              selectedTransactionType = '支出';
+                            }
+                          });
+                        },
+                        backgroundColor: coldColor.withOpacity(0.1),
+                        selectedColor: coldColor.withOpacity(0.3),
+                      ),
+                    ],
+                  ),
+                  Divider(),
+                  Text('类别',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: categories.map((category) {
+                      String categoryString =
+                          '${category['emoji']}${category['label']}';
+                      bool isSelected =
+                          selectedFilterCategories.contains(categoryString);
+                      return FilterChip(
+                        label: Text(categoryString),
+                        selected: isSelected,
+                        onSelected: (bool selected) {
+                          setState(() {
+                            if (selected) {
+                              selectedFilterCategories.add(categoryString);
+                            } else {
+                              selectedFilterCategories.remove(categoryString);
+                            }
+                          });
+                        },
+                        backgroundColor: category['color'].withOpacity(0.1),
+                        selectedColor: category['color'].withOpacity(0.3),
+                        checkmarkColor: category['color'],
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // 确保在关时不会触发键盘
+                        FocusScope.of(context).unfocus();
+                        Navigator.pop(context);
+                        _applyFilter();
+                      },
+                      child: Text('应用筛选'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 添加筛选应用方法
+  void _applyFilter() {
+    setState(() {
+      if (selectedFilterCategories.isEmpty && selectedTransactionType == null) {
+        isFiltered = false;
+        filteredRecords.clear();
+        _loadRecords();
+      } else {
+        isFiltered = true;
+        filteredRecords = records.where((record) {
+          bool matchesType = selectedTransactionType == null ||
+              record['type'] == selectedTransactionType;
+
+          List<String> recordCategories = [];
+          try {
+            recordCategories =
+                (jsonDecode(record['categories'] ?? '[]') as List).cast<String>();
+          } catch (e) {
+            print('Error decoding categories: $e');
+          }
+
+          bool matchesCategories = selectedFilterCategories.isEmpty ||
+              selectedFilterCategories
+                  .any((filterCategory) => recordCategories.contains(filterCategory));
+
+          return matchesType && matchesCategories;
+        }).toList();
+      }
+    });
+  }
+
+  // 添加按金额排序的方法
+  void _toggleSortByAmount() {
+    setState(() {
+      if (_sortType != 'amount') {
+        _sortType = 'amount';
+        _isAmountAscending = true;
+      } else {
+        _isAmountAscending = !_isAmountAscending;
+      }
+      _sortRecords();
+    });
+  }
+
+  // 修改原有的时间排序方法
+  void _toggleSortByTime() {
+    setState(() {
+      if (_sortType != 'time') {
+        _sortType = 'time';
+        _isTimeAscending = true;
+      } else {
+        _isTimeAscending = !_isTimeAscending;
+      }
+      _sortRecords();
+    });
+  }
+
+  // 添加排序记录的方法
+  void _sortRecords() {
+    records.sort((a, b) {
+      if (_sortType == 'amount') {
+        double amountA = double.parse(a['amount'] ?? '0');
+        double amountB = double.parse(b['amount'] ?? '0');
+        return _isAmountAscending
+            ? amountA.compareTo(amountB)
+            : amountB.compareTo(amountA);
+      } else {
+        DateTime timeA =
+            DateTime.parse(a['timestamp'] ?? DateTime.now().toIso8601String());
+        DateTime timeB =
+            DateTime.parse(b['timestamp'] ?? DateTime.now().toIso8601String());
+        return _isTimeAscending
+            ? timeA.compareTo(timeB)
+            : timeB.compareTo(timeA);
+      }
     });
     _saveRecords();
   }
@@ -234,37 +478,48 @@ class AccountingPageState extends State<AccountingPage> {
                             children: [
                               Expanded(
                                 flex: 2,
-                                child: TextFormField(
-                                  controller: _amountController,
-                                  decoration: InputDecoration(
-                                    labelText: '金额',
-                                    labelStyle: TextStyle(
-                                      color: const Color.fromARGB(
-                                          255, 100, 100, 100),
-                                    ),
-                                    enabledBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: const Color.fromARGB(
-                                            255, 214, 214, 214),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    focusedBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: themeColor,
-                                        width: 2.0,
-                                      ),
-                                    ),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '请输入金额';
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (_amountFocusNode.hasFocus) {
+                                      _amountFocusNode.unfocus();
+                                    } else {
+                                      FocusScope.of(context)
+                                          .requestFocus(_amountFocusNode);
                                     }
-                                    return null;
                                   },
-                                  cursorColor:
-                                      const Color.fromARGB(255, 214, 214, 214),
+                                  child: TextFormField(
+                                    controller: _amountController,
+                                    focusNode: _amountFocusNode,
+                                    decoration: InputDecoration(
+                                      labelText: '金额',
+                                      labelStyle: TextStyle(
+                                        color: const Color.fromARGB(
+                                            255, 100, 100, 100),
+                                      ),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: const Color.fromARGB(
+                                              255, 214, 214, 214),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: themeColor,
+                                          width: 2.0,
+                                        ),
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return '请输入金额';
+                                      }
+                                      return null;
+                                    },
+                                    cursorColor: const Color.fromARGB(
+                                        255, 214, 214, 214),
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -355,30 +610,41 @@ class AccountingPageState extends State<AccountingPage> {
                               // 备注输入框
                               Expanded(
                                 flex: 1,
-                                child: TextFormField(
-                                  controller: _noteController, // 控制器用于获取用户输入的备注
-                                  decoration: InputDecoration(
-                                    labelText: '备注', // 设置labelText
-                                    labelStyle: TextStyle(
-                                      color: const Color.fromARGB(
-                                          255, 100, 100, 100),
-                                    ), // 设置labelText的颜色
-                                    enabledBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (_noteFocusNode.hasFocus) {
+                                      _noteFocusNode.unfocus();
+                                    } else {
+                                      FocusScope.of(context)
+                                          .requestFocus(_noteFocusNode);
+                                    }
+                                  },
+                                  child: TextFormField(
+                                    controller: _noteController,
+                                    focusNode: _noteFocusNode,
+                                    decoration: InputDecoration(
+                                      labelText: '备注', // 设置labelText
+                                      labelStyle: TextStyle(
                                         color: const Color.fromARGB(
-                                            255, 214, 214, 214), // 设置横线颜色
-                                        width: 1.5, // 设置横线粗细
+                                            255, 100, 100, 100),
+                                      ), // 设置labelText的颜色
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: const Color.fromARGB(
+                                              255, 214, 214, 214), // 设置横线颜色
+                                          width: 1.5, // 设置横线粗细
+                                        ),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: themeColor, // 设置获取焦点时的横线颜色
+                                          width: 2.0, // 设置获取焦点时的横线粗细
+                                        ),
                                       ),
                                     ),
-                                    focusedBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: themeColor, // 设置获取焦点时的横线颜色
-                                        width: 2.0, // 设置获取焦点时的横线粗细
-                                      ),
-                                    ),
+                                    cursorColor: const Color.fromARGB(
+                                        255, 214, 214, 214), // 设置获取点时的横线颜色
                                   ),
-                                  cursorColor: const Color.fromARGB(
-                                      255, 214, 214, 214), // 设置获取点时的横线颜色
                                 ),
                               ),
                               SizedBox(width: 25),
@@ -410,17 +676,47 @@ class AccountingPageState extends State<AccountingPage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton(
-                      icon: Icon(_isAscending
-                          ? Icons.arrow_upward
-                          : Icons.arrow_downward),
-                      onPressed: _toggleSortOrder,
-                      tooltip: _isAscending ? '切换为倒序' : '切换为正序',
+                      icon: Icon(Icons.filter_list),
+                      onPressed: _showFilterBottomSheet,
+                      tooltip: '筛选账单',
+                      color: selectedFilterCategories.isNotEmpty
+                          ? Theme.of(context).primaryColor
+                          : null,
                     ),
                     IconButton(
-                      icon:
-                          Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+                      icon: Icon(Icons.attach_money),
+                      onPressed: _toggleSortByAmount,
+                      tooltip: _sortType == 'amount'
+                          ? (_isAmountAscending ? '金额从低到高' : '金额从高到低')
+                          : '按金额排序',
+                      color: _sortType == 'amount'
+                          ? Theme.of(context).primaryColor
+                          : null,
+                    ),
+                    IconButton(
+                      icon: Icon(_isTimeAscending
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward),
+                      onPressed: _toggleSortByTime,
+                      tooltip: _sortType == 'time'
+                          ? (_isTimeAscending ? '从旧到新' : '从新到旧')
+                          : '按时间排序',
+                      color: _sortType == 'time'
+                          ? Theme.of(context).primaryColor
+                          : null,
+                    ),
+                    IconButton(
+                      icon: Icon(_viewMode == 0 
+                          ? Icons.grid_view_sharp  // 列表视图时显示2列网格图标
+                          : _viewMode == 1 
+                              ? Icons.grid_3x3     // 2列网格时显示3列网格图标
+                              : Icons.view_list),  // 3列网格时显示列表图标
                       onPressed: _toggleViewMode,
-                      tooltip: _isGridView ? '切换到列表视图' : '切换到网格视图',
+                      tooltip: _viewMode == 0 
+                          ? '切换到2列网格' 
+                          : _viewMode == 1 
+                              ? '切换到3列网格' 
+                              : '切换到列表视图',
                     ),
                     IconButton(
                       icon: Icon(_isDeleteMode
@@ -438,35 +734,47 @@ class AccountingPageState extends State<AccountingPage> {
                 SizedBox(height: 8),
                 // 账单列表
                 Expanded(
-                  child: _isGridView
-                      ? LayoutBuilder(
-                          builder: (context, constraints) {
-                            return GridView.extent(
-                              maxCrossAxisExtent: constraints.maxWidth / 2,
-                              childAspectRatio: 1.5,
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              padding: EdgeInsets.all(16),
-                              children: List.generate(records.length, (index) {
-                                return LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return _buildRecordItem(
-                                        context, index, constraints);
-                                  },
-                                );
-                              }),
-                            );
-                          },
-                        )
-                      : ListView.builder(
-                          itemCount: records.length,
+                  child: _viewMode == 0
+                      ? ListView.builder(
+                          // 列表视图的现有代码保持不变
+                          itemCount: isFiltered ? filteredRecords.length : records.length,
                           itemBuilder: (context, index) => Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: LayoutBuilder(
-                              builder: (context, constraints) =>
-                                  _buildRecordItem(context, index, constraints),
+                              builder: (context, constraints) => _buildRecordItem(
+                                  context, 
+                                  index, 
+                                  constraints, 
+                                  isFiltered ? filteredRecords : records),
                             ),
                           ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return GridView.extent(
+                              maxCrossAxisExtent: _viewMode == 1 
+                                  ? constraints.maxWidth / 2  // 2列网格
+                                  : constraints.maxWidth / 3, // 3列网格
+                              childAspectRatio: _viewMode == 1 ? 2 : 1.2, // 根据模式设置比例
+                              crossAxisSpacing: 6,
+                              mainAxisSpacing: 10,
+                              padding: EdgeInsets.all(0),
+                              children: List.generate(
+                                isFiltered ? filteredRecords.length : records.length,
+                                (index) {
+                                  return LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return _buildRecordItem(
+                                          context, 
+                                          index, 
+                                          constraints, 
+                                          isFiltered ? filteredRecords : records);
+                                    },
+                                  );
+                                },
+                              ),
+                            );
+                          },
                         ),
                 ),
               ],
@@ -476,7 +784,7 @@ class AccountingPageState extends State<AccountingPage> {
 
   // 新增：构建记录项的方法，用于网格和列表视图
   Widget _buildRecordItem(
-      BuildContext context, int index, BoxConstraints constraints) {
+      BuildContext context, int index, BoxConstraints constraints, List<Map<String, String>> displayRecords) {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
@@ -485,14 +793,130 @@ class AccountingPageState extends State<AccountingPage> {
 
     List<String> recordCategories = [];
     try {
-      recordCategories =
-          (jsonDecode(records[index]['categories'] ?? '[]') as List)
-              .cast<String>();
+      recordCategories = (jsonDecode(displayRecords[index]['categories'] ?? '[]') as List).cast<String>();
     } catch (e) {
       print('Error decoding categories: $e');
     }
 
-    if (_isGridView) {
+    // 修改类别显示的处理逻辑
+    Widget buildCategoryItem(String categoryString) {
+      var category = categories.firstWhere(
+        (c) => '${c['emoji']}${c['label']}' == categoryString,
+        orElse: () {
+          // 如果是临时类别，直接使用categoryString作为显示文本
+          return {
+            'emoji': '',  // 移除🏷
+            'label': categoryString,
+            'color': themeColor,  // 使用主题色作为默认颜色
+            'isTemporary': true
+          };
+        },
+      );
+
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: (category['color'] as Color).withOpacity(0.2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          category['isTemporary'] == true 
+              ? categoryString  // 临时类别直接显示完整文本
+              : '${category['emoji']} ${category['label']}',  // 永久类别显示emoji和标签
+          style: TextStyle(fontSize: 10),
+        ),
+      );
+    }
+
+    if (_viewMode == 0) {
+      // 列表视的布局（保持原来的样式）
+      return Card(
+        child: Stack(
+          children: [
+            ListTile(
+              leading: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    displayRecords[index]['type'] == '收入'
+                        ? Icons.north_east
+                        : Icons.south_west,
+                    color:
+                        displayRecords[index]['type'] == '收入' ? warmColor : coldColor,
+                  ),
+                ],
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    '${displayRecords[index]['amount']}',
+                    style: TextStyle(
+                      color: displayRecords[index]['type'] == '收入'
+                          ? warmColor
+                          : coldColor,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.category,
+                        size: 16,
+                        color: const Color.fromARGB(255, 214, 214, 214),
+                      ),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: recordCategories.map((categoryString) {
+                            return buildCategoryItem(categoryString);
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (displayRecords[index]['note']?.isNotEmpty ?? false) ...[
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.note, size: 16, color: Colors.grey),
+                        SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '${displayRecords[index]['note']}',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (_isDeleteMode)
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: IconButton(
+                  icon: Icon(Icons.remove_circle, color: Colors.red),
+                  onPressed: () => _deleteRecord(index),
+                  iconSize: 20,
+                ),
+              ),
+          ],
+        ),
+      );
+    } else {
       return Stack(
         children: [
           Card(
@@ -505,18 +929,18 @@ class AccountingPageState extends State<AccountingPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Icon(
-                        records[index]['type'] == '收入'
+                        displayRecords[index]['type'] == '收入'
                             ? Icons.north_east
                             : Icons.south_west,
-                        color: records[index]['type'] == '收入'
+                        color: displayRecords[index]['type'] == '收入'
                             ? warmColor
                             : coldColor,
                         size: 20,
                       ),
                       Text(
-                        '${records[index]['amount']}',
+                        '${displayRecords[index]['amount']}',
                         style: TextStyle(
-                          color: records[index]['type'] == '收入'
+                          color: displayRecords[index]['type'] == '收入'
                               ? warmColor
                               : coldColor,
                           fontSize: 16,
@@ -535,31 +959,10 @@ class AccountingPageState extends State<AccountingPage> {
                             spacing: 4,
                             runSpacing: 4,
                             children: recordCategories.map((categoryString) {
-                              var category = categories.firstWhere(
-                                (c) =>
-                                    '${c['emoji']}${c['label']}' ==
-                                    categoryString,
-                                orElse: () => {
-                                  'emoji': '🏷️',
-                                  'label': categoryString,
-                                  'color': Colors.grey
-                                },
-                              );
-                              return Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: (category['color'] as Color)
-                                      .withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                    '${category['emoji']} ${category['label']}',
-                                    style: TextStyle(fontSize: 10)),
-                              );
+                              return buildCategoryItem(categoryString);
                             }).toList(),
                           ),
-                          if (records[index]['note']?.isNotEmpty ?? false) ...[
+                          if (displayRecords[index]['note']?.isNotEmpty ?? false) ...[
                             SizedBox(height: 4),
                             Row(
                               children: [
@@ -567,7 +970,7 @@ class AccountingPageState extends State<AccountingPage> {
                                 SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
-                                    '${records[index]['note']}',
+                                    '${displayRecords[index]['note']}',
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 2,
                                     style: TextStyle(
@@ -596,115 +999,6 @@ class AccountingPageState extends State<AccountingPage> {
               ),
             ),
         ],
-      );
-    } else {
-      // 列表视的布局（保持原来的样式）
-      return Card(
-        child: Stack(
-          children: [
-            ListTile(
-              leading: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    records[index]['type'] == '收入'
-                        ? Icons.north_east
-                        : Icons.south_west,
-                    color:
-                        records[index]['type'] == '收入' ? warmColor : coldColor,
-                  ),
-                ],
-              ),
-              title: Row(
-                children: [
-                  Text(
-                    '${records[index]['amount']}',
-                    style: TextStyle(
-                      color: records[index]['type'] == '收入'
-                          ? warmColor
-                          : coldColor,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.category,
-                        size: 16,
-                        color: const Color.fromARGB(255, 214, 214, 214),
-                      ),
-                      SizedBox(width: 4),
-                      Expanded(
-                        child: Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: recordCategories.map((categoryString) {
-                            var category = categories.firstWhere(
-                              (c) =>
-                                  '${c['emoji']}${c['label']}' ==
-                                  categoryString,
-                              orElse: () => {
-                                'emoji': '🏷️',
-                                'label': categoryString,
-                                'color': Colors.grey
-                              },
-                            );
-                            return Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (category['color'] as Color)
-                                    .withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                  '${category['emoji']} ${category['label']}',
-                                  style: TextStyle(fontSize: 10)),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (records[index]['note']?.isNotEmpty ?? false) ...[
-                    SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.note, size: 16, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${records[index]['note']}',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (_isDeleteMode)
-              Positioned(
-                right: 4,
-                bottom: 4,
-                child: IconButton(
-                  icon: Icon(Icons.remove_circle, color: Colors.red),
-                  onPressed: () => _deleteRecord(index),
-                  iconSize: 20,
-                ),
-              ),
-          ],
-        ),
       );
     }
   }
@@ -779,7 +1073,7 @@ class AccountingPageState extends State<AccountingPage> {
   }
 
   // 添加这个辅助方法来生成随机颜色
-  Color _getRandomColor() {
+  Color getRandomColor() {
     return Color((math.Random().nextDouble() * 0xFFFFFF).toInt())
         .withOpacity(1.0);
   }
