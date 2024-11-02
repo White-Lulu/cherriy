@@ -24,6 +24,10 @@ class DiaryPageState extends State<DiaryPage> {
   // 可选的心情列表
   final List<String> _moods = ['😊', '😐', '😢', '😎', '😴','🤣','🥰',];
 
+  // 添加新的状态变量
+  bool _isReversed = false;
+  bool _showDeleteButtons = false;
+
   // 选择图片
   Future<void> _pickImage() async {
     final List<XFile> images = await _picker.pickMultiImage() ?? [];
@@ -81,6 +85,14 @@ class DiaryPageState extends State<DiaryPage> {
     }
   }
 
+  // 添加删除日记方法
+  void _deleteDiary(int index) {
+    setState(() {
+      diaries.removeAt(index);
+      _saveDiaries();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -131,45 +143,78 @@ class DiaryPageState extends State<DiaryPage> {
             cursorColor: const Color.fromARGB(255, 214, 214, 214),
             maxLines: 3,
           ),
+          //SizedBox(height:10),
+          // 在日记列表前添加操作按钮行
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: Icon(Icons.image),
-                onPressed: _pickImage,
-              ),
-              if (_selectedImagePaths.isNotEmpty)
-                Expanded(
-                  child: Container(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _selectedImagePaths.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: GestureDetector(
-                            onTap: () => _showFullImage(context, _selectedImagePaths[index]),
-                            child: Image.file(
-                              File(_selectedImagePaths[index]),
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        );
-                      },
+              Expanded(
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        icon: Icon(Icons.image),
+                        onPressed: _pickImage,
+                      ),
                     ),
-                  ),
+                    if (_selectedImagePaths.isNotEmpty)
+                      SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _selectedImagePaths.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: GestureDetector(
+                                onTap: () => _showFullImage(context, _selectedImagePaths, index),
+                                child: Image.file(
+                                  File(_selectedImagePaths[index]),
+                                  height: 100,
+                                  width: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isReversed = !_isReversed;
+                      });
+                    },
+                    icon: Icon(_isReversed ? Icons.arrow_upward : Icons.arrow_downward),
+                    label: Text(_isReversed ? '正序' : '倒序'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _showDeleteButtons = !_showDeleteButtons;
+                      });
+                    },
+                    icon: Icon(_showDeleteButtons ? Icons.check : Icons.delete_outline),
+                    label: Text(_showDeleteButtons ? '完成' : '删除'),
+                  ),
+                ],
+              ),
             ],
           ),
-          SizedBox(height:10),
-          // 日记列表
+          // 修改日记列表部分
           Expanded(
             child: ListView.builder(
               itemCount: diaries.length,
               itemBuilder: (context, index) {
-                final diary = diaries[index];
+                final diary = _isReversed 
+                    ? diaries[diaries.length - 1 - index]
+                    : diaries[index];
                 final date = diary['date'] as String;
                 final formattedDate = date.length > 19 ? date.substring(0, 19) : date;
                 List<String> imagePaths = [];
@@ -181,34 +226,49 @@ class DiaryPageState extends State<DiaryPage> {
 
                 return Card(
                   margin: EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Stack(
                     children: [
-                      ListTile(
-                        leading: Text(diary['mood'] ?? '😐', style: TextStyle(fontSize: 24)),
-                        title: Text(diary['content'] ?? ''),
-                        subtitle: Text(formattedDate),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: Text(diary['mood'] ?? '😐', style: TextStyle(fontSize: 24)),
+                            title: Text(diary['content'] ?? ''),
+                            subtitle: Text(formattedDate),
+                          ),
+                          if (imagePaths.isNotEmpty)
+                            SizedBox(
+                              height: 100,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: imagePaths.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: GestureDetector(
+                                      onTap: () => _showFullImage(context, imagePaths, index),
+                                      child: Image.file(
+                                        File(imagePaths[index]),
+                                        height: 100,
+                                        width: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
                       ),
-                      if (imagePaths.isNotEmpty)
-                        Container(
-                          height: 200,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: imagePaths.length,
-                            itemBuilder: (context, imageIndex) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: GestureDetector(
-                                  onTap: () => _showFullImage(context, imagePaths[imageIndex]),
-                                  child: Image.file(
-                                    File(imagePaths[imageIndex]),
-                                    height: 200,
-                                    width: 200,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              );
-                            },
+                      if (_showDeleteButtons)
+                        Positioned(
+                          right: 8,
+                          bottom: 8,
+                          child: IconButton(
+                            icon: Icon(Icons.remove_circle_outline, color: Colors.red),
+                            onPressed: () => _deleteDiary(_isReversed 
+                                ? diaries.length - 1 - index 
+                                : index),
                           ),
                         ),
                     ],
@@ -217,30 +277,48 @@ class DiaryPageState extends State<DiaryPage> {
               },
             ),
           ),
-        ],
-      ),
+            ],
+          ),
     );
   }
 
-  // 添加查看大图方法
-  void _showFullImage(BuildContext context, String imagePath) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          body: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Center(
-              child: InteractiveViewer(
-                panEnabled: true,
-                boundaryMargin: EdgeInsets.all(20),
-                minScale: 0.5,
-                maxScale: 4,
-                child: Image.file(File(imagePath)),
+  // 修改查看大图方法
+  void _showFullImage(BuildContext context, List<String> imagePaths, int initialIndex) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            // 图片查看器
+            PageView.builder(
+              controller: PageController(initialPage: initialIndex),
+              itemCount: imagePaths.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.file(
+                      File(imagePaths[index]),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                );
+              },
+            ),
+            // 关闭按钮
+            Positioned(
+              right: 10,
+              top: 10,
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

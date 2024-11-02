@@ -651,9 +651,9 @@ class AccountingPageState extends State<AccountingPage> {
                               Expanded(
                                 flex: 0,
                                 child:
-                                    // 添加记按钮
+                                    // 添加记录按钮
                                     ElevatedButton(
-                                  onPressed: _addRecord, // 添加记
+                                  onPressed: _addRecord, // 添加记录
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: themeColor, // 设置按钮背景颜色
                                     foregroundColor: textColor,
