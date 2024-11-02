@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "F:/fff/FlutterProject/cherriy/linux"
+    "cmake.sourceDirectory": "F:/fff/FlutterProject/cherriy/linux",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

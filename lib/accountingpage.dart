@@ -358,10 +358,10 @@ class AccountingPageState extends State<AccountingPage> {
                         Navigator.pop(context);
                         _applyFilter();
                       },
-                      child: Text('应用筛选'),
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 12),
                       ),
+                      child: Text('应用筛选'),
                     ),
                   ),
                 ],

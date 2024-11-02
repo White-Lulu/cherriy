@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart'; // 导入Flutter材料设计库
 import 'package:shared_preferences/shared_preferences.dart'; // 导入本地存储库
 import 'dart:convert'; // 导入JSON编解码支持
+import 'dart:io'; // 添加这一行
 import 'package:intl/intl.dart'; // 导入国际化日期格式化库
+import 'package:image_picker/image_picker.dart';
 
 // 日记页面
 class DiaryPage extends StatefulWidget {
@@ -12,12 +14,25 @@ class DiaryPage extends StatefulWidget {
 class DiaryPageState extends State<DiaryPage> {
   // 日记内容输入控制器
   final _diaryController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  String? _selectedImagePath;
+
   // 存储日记条目的列表
   List<Map<String, String>> diaries = [];
   // 当前选择的心情
   String _selectedMood = '😊';
   // 可选的心情列表
   final List<String> _moods = ['😊', '😐', '😢', '😎', '😴','🤣','🥰',];
+
+  // 选择图片
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _selectedImagePath = image.path;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -47,7 +62,7 @@ class DiaryPageState extends State<DiaryPage> {
     await prefs.setString('diaries', jsonString);
   }
 
-  // 添加新的日记条目
+  // 修改添加日记的方法
   void _addDiary() {
     if (_diaryController.text.isNotEmpty) {
       final now = DateTime.now();
@@ -57,9 +72,11 @@ class DiaryPageState extends State<DiaryPage> {
           'date': formattedDate,
           'content': _diaryController.text,
           'mood': _selectedMood,
+          'imagePath': _selectedImagePath ?? '', // 添加图片路径
         });
         _saveDiaries();
         _diaryController.clear();
+        _selectedImagePath = null; // 清除已选择的图片
       });
     }
   }
@@ -114,6 +131,21 @@ class DiaryPageState extends State<DiaryPage> {
             cursorColor: const Color.fromARGB(255, 214, 214, 214),
             maxLines: 3,
           ),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.image),
+                onPressed: _pickImage,
+              ),
+              if (_selectedImagePath != null)
+                Expanded(
+                  child: Image.file(
+                    File(_selectedImagePath!),
+                    height: 100,
+                  ),
+                ),
+            ],
+          ),
           SizedBox(height:10),
           // 日记列表
           Expanded(
@@ -125,10 +157,25 @@ class DiaryPageState extends State<DiaryPage> {
                 final formattedDate = date.length > 19 ? date.substring(0, 19) : date;
                 return Card(
                   margin: EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    leading: Text(diary['mood'] ?? '😐', style: TextStyle(fontSize: 24)),
-                    title: Text(diary['content'] ?? ''),
-                    subtitle: Text(formattedDate),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        leading: Text(diary['mood'] ?? '😐', style: TextStyle(fontSize: 24)),
+                        title: Text(diary['content'] ?? ''),
+                        subtitle: Text(formattedDate),
+                      ),
+                      if (diary['imagePath']?.isNotEmpty ?? false)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Image.file(
+                            File(diary['imagePath']!),
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                    ],
                   ),
                 );
               },

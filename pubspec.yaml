@@ -20,6 +20,8 @@ dependencies: # 依赖项*3
 
   flutter_colorpicker: ^1.0.3
 
+  image_picker: ^1.1.2
+
 dev_dependencies: # 开发依赖项
   flutter_test: # Flutter的测试框架
     sdk: flutter

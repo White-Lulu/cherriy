@@ -13,6 +13,28 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+buildscript {
+    repositories {
+        // 添加国内镜像源
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        google()
+        mavenCentral()
+    }
+}
+
+allprojects {
+    repositories {
+        // 添加国内镜像源
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        google()
+        mavenCentral()
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
