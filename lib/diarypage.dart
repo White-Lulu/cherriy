@@ -15,7 +15,7 @@ class DiaryPageState extends State<DiaryPage> {
   // 日记内容输入控制器
   final _diaryController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  String? _selectedImagePath;
+  List<String> _selectedImagePaths = [];
 
   // 存储日记条目的列表
   List<Map<String, String>> diaries = [];
@@ -26,10 +26,10 @@ class DiaryPageState extends State<DiaryPage> {
 
   // 选择图片
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    final List<XFile> images = await _picker.pickMultiImage() ?? [];
+    if (images.isNotEmpty) {
       setState(() {
-        _selectedImagePath = image.path;
+        _selectedImagePaths.addAll(images.map((image) => image.path));
       });
     }
   }
@@ -72,11 +72,11 @@ class DiaryPageState extends State<DiaryPage> {
           'date': formattedDate,
           'content': _diaryController.text,
           'mood': _selectedMood,
-          'imagePath': _selectedImagePath ?? '', // 添加图片路径
+          'imagePaths': jsonEncode(_selectedImagePaths), // 将图片路径列表转换为JSON字符串
         });
         _saveDiaries();
         _diaryController.clear();
-        _selectedImagePath = null; // 清除已选择的图片
+        _selectedImagePaths = []; // 清除已选择的图片
       });
     }
   }
@@ -137,11 +137,28 @@ class DiaryPageState extends State<DiaryPage> {
                 icon: Icon(Icons.image),
                 onPressed: _pickImage,
               ),
-              if (_selectedImagePath != null)
+              if (_selectedImagePaths.isNotEmpty)
                 Expanded(
-                  child: Image.file(
-                    File(_selectedImagePath!),
+                  child: Container(
                     height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _selectedImagePaths.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: GestureDetector(
+                            onTap: () => _showFullImage(context, _selectedImagePaths[index]),
+                            child: Image.file(
+                              File(_selectedImagePaths[index]),
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
             ],
@@ -155,6 +172,13 @@ class DiaryPageState extends State<DiaryPage> {
                 final diary = diaries[index];
                 final date = diary['date'] as String;
                 final formattedDate = date.length > 19 ? date.substring(0, 19) : date;
+                List<String> imagePaths = [];
+                try {
+                  imagePaths = List<String>.from(jsonDecode(diary['imagePaths'] ?? '[]'));
+                } catch (e) {
+                  print('Error decoding image paths: $e');
+                }
+
                 return Card(
                   margin: EdgeInsets.symmetric(vertical: 8),
                   child: Column(
@@ -165,14 +189,26 @@ class DiaryPageState extends State<DiaryPage> {
                         title: Text(diary['content'] ?? ''),
                         subtitle: Text(formattedDate),
                       ),
-                      if (diary['imagePath']?.isNotEmpty ?? false)
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Image.file(
-                            File(diary['imagePath']!),
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                      if (imagePaths.isNotEmpty)
+                        Container(
+                          height: 200,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: imagePaths.length,
+                            itemBuilder: (context, imageIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: GestureDetector(
+                                  onTap: () => _showFullImage(context, imagePaths[imageIndex]),
+                                  child: Image.file(
+                                    File(imagePaths[imageIndex]),
+                                    height: 200,
+                                    width: 200,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                     ],
@@ -182,6 +218,30 @@ class DiaryPageState extends State<DiaryPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 添加查看大图方法
+  void _showFullImage(BuildContext context, String imagePath) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Center(
+              child: InteractiveViewer(
+                panEnabled: true,
+                boundaryMargin: EdgeInsets.all(20),
+                minScale: 0.5,
+                maxScale: 4,
+                child: Image.file(File(imagePath)),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
