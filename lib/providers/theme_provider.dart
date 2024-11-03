@@ -5,6 +5,7 @@ import 'dart:convert';
 class ThemeProvider with ChangeNotifier {
   late ThemeData _themeData;
   String? _backgroundImage;
+  Color? lastBackgroundColor;
   
   String? get backgroundImage => _backgroundImage;
   
@@ -31,6 +32,9 @@ class ThemeProvider with ChangeNotifier {
   List<Map<String, dynamic>> get categories => _categories;
 
   Future<void> setTheme(ThemeData theme) async {
+    if (theme.scaffoldBackgroundColor != Colors.transparent) {
+      lastBackgroundColor = theme.scaffoldBackgroundColor;
+    }
     _themeData = theme;
     notifyListeners();
     await _saveTheme();

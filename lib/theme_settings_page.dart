@@ -34,15 +34,18 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   // 加载当前主题颜色
   void _loadCurrentTheme() {
     final theme = themeProvider.themeData;
-  setState(() {
-    primaryColor = theme.primaryColor;
-    scaffoldBackgroundColor = theme.scaffoldBackgroundColor;
-    cardColor = theme.cardTheme.color ?? theme.cardColor;
-    themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor;
-    // 加载保存的背景图片路径
-    backgroundImage = themeProvider.backgroundImage;
-  });
-}
+    setState(() {
+      primaryColor = theme.primaryColor;
+      scaffoldBackgroundColor = backgroundImage != null 
+          ? theme.scaffoldBackgroundColor 
+          : (theme.scaffoldBackgroundColor == Colors.transparent 
+              ? themeProvider.lastBackgroundColor ?? Colors.white // 使用保存的上一次背景色
+              : theme.scaffoldBackgroundColor);
+      cardColor = theme.cardTheme.color ?? theme.cardColor;
+      themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor;
+      backgroundImage = themeProvider.backgroundImage;
+    });
+  }
 
   void _loadCategories() {
     setState(() {
@@ -139,22 +142,31 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           children: [
             IconButton(
               icon: Icon(Icons.image),
-              onPressed: _pickBackgroundImage,
+              onPressed: () async {
+                await _pickBackgroundImage();
+              },
             ),
             SizedBox(width: 8),
             GestureDetector(
-              onTap: () => _showColorPicker(label, color, onColorChanged),
+              onTap: () {
+                _showColorPicker(label, scaffoldBackgroundColor, (newColor) {
+                  setState(() {
+                    backgroundImage = null;
+                    scaffoldBackgroundColor = newColor;
+                    onColorChanged(newColor);
+                  });
+                });
+              },
               child: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color,
+                  color: backgroundImage != null ? scaffoldBackgroundColor : color,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.grey),
                 ),
               ),
             ),
-            
           ],
         ),
       );
@@ -222,7 +234,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   void _saveTheme() {
     final newTheme = ThemeData(
       primaryColor: primaryColor,
-      scaffoldBackgroundColor: scaffoldBackgroundColor,
+      scaffoldBackgroundColor: backgroundImage != null ? Colors.transparent : scaffoldBackgroundColor,
       cardTheme: CardTheme(
         color: cardColor.withOpacity(cardColor.opacity),
         elevation: 0,
@@ -250,7 +262,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       ),
     );
     themeProvider.setTheme(newTheme);
-    themeProvider.setBackgroundImage(backgroundImage); // 添加这行
+    themeProvider.setBackgroundImage(backgroundImage);
     themeProvider.setCategories(categories);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('主题已保存')));
   }
