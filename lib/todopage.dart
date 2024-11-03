@@ -2,6 +2,10 @@ import 'package:flutter/material.dart'; // 导入Flutter材料设计库
 import 'package:shared_preferences/shared_preferences.dart'; // 导入本地存储库
 import 'dart:convert'; // 导入JSON编解码支持
 
+// 添加新的枚举和状态
+enum TodoCategory { none, study, work }
+enum ViewMode { horizontal, vertical }
+
 // 待办事项页面
 class TodoPage extends StatefulWidget {
   @override
@@ -15,10 +19,72 @@ class TodoPageState extends State<TodoPage> {
   // 存储待办事项的列表
   List<Map<String, dynamic>> todos = [];
 
+  TodoCategory _selectedCategory = TodoCategory.none;
+  Map<TodoCategory, bool> _expandedStates = {
+    TodoCategory.none: true,
+    TodoCategory.study: true,
+    TodoCategory.work: true,
+  };
+  Map<TodoCategory, ViewMode> _viewModes = {
+    TodoCategory.none: ViewMode.horizontal,
+    TodoCategory.study: ViewMode.horizontal,
+    TodoCategory.work: ViewMode.horizontal,
+  };
+
+  // 添加保存视图模式的方法
+  void _saveViewModes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final viewModesMap = _viewModes.map(
+      (key, value) => MapEntry(key.toString(), value.toString())
+    );
+    await prefs.setString('todoViewModes', jsonEncode(viewModesMap));
+  }
+
+  // 添加加载视图模式的方法
+  void _loadViewModes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedViewModes = prefs.getString('todoViewModes');
+    if (savedViewModes != null) {
+      final Map<String, dynamic> viewModesMap = jsonDecode(savedViewModes);
+      setState(() {
+        _viewModes = viewModesMap.map((key, value) => MapEntry(
+          TodoCategory.values.firstWhere((e) => e.toString() == key),
+          ViewMode.values.firstWhere((e) => e.toString() == value),
+        ));
+      });
+    }
+  }
+
+  // 添加保存折叠状态的方法
+  Future<void> _saveExpandedStates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expandedStatesMap = _expandedStates.map(
+      (key, value) => MapEntry(key.toString(), value)
+    );
+    await prefs.setString('todoExpandedStates', jsonEncode(expandedStatesMap));
+  }
+
+  // 添加加载折叠状态的方法
+  Future<void> _loadExpandedStates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedStates = prefs.getString('todoExpandedStates');
+    if (savedStates != null) {
+      final Map<String, dynamic> statesMap = jsonDecode(savedStates);
+      setState(() {
+        _expandedStates = statesMap.map((key, value) => MapEntry(
+          TodoCategory.values.firstWhere((e) => e.toString() == key),
+          value as bool,
+        ));
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _loadTodos();  // 初始化时加载待办事项
+    _loadTodos();
+    _loadViewModes();  // 加载保存的视图模式
+    _loadExpandedStates();  // 加载折叠状态
   }
 
   // 从本地存储加载待办事项
@@ -42,8 +108,12 @@ class TodoPageState extends State<TodoPage> {
   void _addTodo() {
     if (_todoController.text.isNotEmpty) {
       setState(() {
-        todos.add({'task': _todoController.text, 'completed': false});
-        _saveTodos();  // 保存待办事项
+        todos.add({
+          'task': _todoController.text,
+          'completed': false,
+          'category': _selectedCategory.toString(),
+        });
+        _saveTodos();
         _todoController.clear();
       });
     }
@@ -76,82 +146,151 @@ class TodoPageState extends State<TodoPage> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _todoController,
-                decoration: InputDecoration(
-                  labelText: '待办事项',
-                  labelStyle: TextStyle(
-                    color: const Color.fromARGB(255, 100, 100, 100),
+              child: Row(
+                children: [
+                  PopupMenuButton<TodoCategory>(
+                    icon: Icon(Icons.category),
+                    onSelected: (TodoCategory category) {
+                      setState(() => _selectedCategory = category);
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: TodoCategory.none,
+                        child: Text('无分类'),
+                      ),
+                      PopupMenuItem(
+                        value: TodoCategory.study,
+                        child: Text('学习'),
+                      ),
+                      PopupMenuItem(
+                        value: TodoCategory.work,
+                        child: Text('工作'),
+                      ),
+                    ],
                   ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: const Color.fromARGB(255, 214, 214, 214),
-                      width: 1.5,
+                  Expanded(
+                    child: TextField(
+                      controller: _todoController,
+                      decoration: InputDecoration(
+                        labelText: '待办事项',
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.add),
+                          onPressed: _addTodo,
+                        ),
+                      ),
                     ),
                   ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
-                      width: 2.0,
-                    ),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: _addTodo,
-                    color: textColor,
-                  ),
-                ),
-                cursorColor: const Color.fromARGB(255, 214, 214, 214),
+                ],
               ),
             ),
           ),
           SizedBox(height: 16),
           // 显示待办事项列表
           Expanded(
-            child: ListView.builder(
-              itemCount: todos.length,
-              itemBuilder: (context, index) {
+            child: ListView(
+              children: TodoCategory.values.map((category) {
+                final categoryTodos = todos.where(
+                  (todo) => todo['category'] == category.toString()
+                ).toList();
+
+                if (categoryTodos.isEmpty) return SizedBox.shrink();
+
                 return Card(
                   margin: EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    title: Text(
-                      todos[index]['task'],
-                      style: TextStyle(
-                        decoration: todos[index]['completed']
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                      ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 完成状态复选框
-                        Checkbox(
-                          value: todos[index]['completed'],
-                          onChanged: (value) => _toggleComplete(index),
-                          activeColor: textColor,
-                          checkColor:Theme.of(context).cardColor,
-                          side: BorderSide(
-                            color: todos[index]['completed'] ? textColor : themeColor,
-                            width:1.5,
-                          ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Text(
+                          category == TodoCategory.none ? '无分类' :
+                          category == TodoCategory.study ? '学习' : '工作',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        // 删除按钮
-                        IconButton(
-                          icon: Icon(
-                            Icons.delete,
-                            color: const Color.fromARGB(255, 214, 214, 214),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(_viewModes[category] == ViewMode.horizontal
+                                  ? Icons.view_module
+                                  : Icons.view_list),
+                              onPressed: () {
+                                setState(() {
+                                  _viewModes[category] = _viewModes[category] == ViewMode.horizontal
+                                      ? ViewMode.vertical
+                                      : ViewMode.horizontal;
+                                  _saveViewModes();  // 保存视图模式的更改
+                                });
+                              },
                             ),
-                          onPressed: () => _deleteTodo(index),
+                            IconButton(
+                              icon: Icon(_expandedStates[category]!
+                                  ? Icons.expand_less
+                                  : Icons.expand_more),
+                              onPressed: () {
+                                setState(() {
+                                  _expandedStates[category] = !_expandedStates[category]!;
+                                  _saveExpandedStates();  // 保存折叠状态
+                                });
+                              },
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (_expandedStates[category]!)
+                        _viewModes[category] == ViewMode.horizontal
+                            ? Container(
+                                height: 120,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: categoryTodos.length,
+                                  itemBuilder: (context, index) {
+                                    return Container(
+                                      width: 200,
+                                      child: _buildTodoCard(categoryTodos[index], 
+                                        todos.indexOf(categoryTodos[index])),
+                                    );
+                                  },
+                                ),
+                              )
+                            : Column(
+                                children: categoryTodos.map((todo) =>
+                                  _buildTodoCard(todo, todos.indexOf(todo))).toList(),
+                              ),
+                    ],
                   ),
                 );
-              },
+              }).toList(),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 添加待办事项卡片构建方法
+  Widget _buildTodoCard(Map<String, dynamic> todo, int index) {
+    return Card(
+      child: ListTile(
+        title: Text(
+          todo['task'],
+          style: TextStyle(
+            decoration: todo['completed']
+                ? TextDecoration.lineThrough
+                : TextDecoration.none,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              value: todo['completed'],
+              onChanged: (value) => _toggleComplete(index),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () => _deleteTodo(index),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -30,7 +30,7 @@ class DiaryPageState extends State<DiaryPage> {
 
   // 选择图片
   Future<void> _pickImage() async {
-    final List<XFile> images = await _picker.pickMultiImage() ?? [];
+    final List<XFile> images = await _picker.pickMultiImage();
     if (images.isNotEmpty) {
       setState(() {
         _selectedImagePaths.addAll(images.map((image) => image.path));

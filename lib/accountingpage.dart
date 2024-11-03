@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // 导入颜色选择器库
 import 'dart:math' as math;
+import 'package:fl_chart/fl_chart.dart';
 
 // 记账页面
 class AccountingPage extends StatefulWidget {
@@ -59,12 +60,56 @@ class AccountingPageState extends State<AccountingPage> {
   List<Map<String, String>> filteredRecords = [];
   bool isFiltered = false; 
 
+  // 添加处理图表数据的变量
+  List<FlSpot> _expenseSpots = [];
+  List<FlSpot> _incomeSpots = [];
+  List<FlSpot> _netIncomeSpots = [];
+  double _maxY = 0;
+  double _minY = 0;
+
+  // 添加新的状态变量
+  bool _isChartExpanded = true;
+
+  // 添加保存视图模式的方法
+  Future<void> _saveViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('accountingViewMode', _viewMode);
+  }
+
+  // 添加加载视图模式的方法
+  Future<void> _loadViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _viewMode = prefs.getInt('accountingViewMode') ?? 0;  // 默认为列表视图
+    });
+  }
+
+  // 添加保存图表折叠状态的方法
+  Future<void> _saveChartExpandedState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('accountingChartExpanded', _isChartExpanded);
+  }
+
+  // 添加加载图表折叠状态的方法
+  Future<void> _loadChartExpandedState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isChartExpanded = prefs.getBool('accountingChartExpanded') ?? true;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     themeProvider.addListener(_onCategoriesChanged);
-    _loadRecords();
+    _loadViewMode();  // 加载保存的视图模式
+    _loadChartExpandedState();  // 加载图表折叠状态
+    _loadRecords().then((_) {
+      if (mounted) {
+        _updateChartData();
+      }
+    });
     _loadCategories();
   }
 
@@ -96,6 +141,7 @@ class AccountingPageState extends State<AccountingPage> {
                 .toList()
             : [];
         _isLoading = false;
+        _updateChartData();  // 在这里也调用更新图表
       });
     } catch (e) {
       print('加载记录时出错: $e');
@@ -136,6 +182,7 @@ class AccountingPageState extends State<AccountingPage> {
       _saveRecords();
       // 更新 ThemeProvider 中的类别列表
       themeProvider.setCategories(categories);
+      _updateChartData();
     }
   }
 
@@ -208,7 +255,7 @@ class AccountingPageState extends State<AccountingPage> {
     if (result != null) {
       setState(() {
         categories.add(result);
-        // 添加到选中的类别时，只使用emoji和label的组合
+        // 添加选中的类别时，只使用emoji和label的组合
         selectedCategories.add('${result['emoji']}${result['label']}');
       });
     }
@@ -217,7 +264,8 @@ class AccountingPageState extends State<AccountingPage> {
   // 新增：切换视图模式的方法
   void _toggleViewMode() {
     setState(() {
-      _viewMode = (_viewMode + 1) % 3; // 在0、1、2之间循环
+      _viewMode = (_viewMode + 1) % 3;
+      _saveViewMode();  // 保存新的视图模式
     });
   }
 
@@ -452,6 +500,159 @@ class AccountingPageState extends State<AccountingPage> {
     _saveRecords();
   }
 
+  // 添加处理图表数据的方法
+  void _updateChartData() {
+    if (records.isEmpty) return;
+
+    // 按日期分组的数据
+    Map<DateTime, double> expenseByDate = {};
+    Map<DateTime, double> incomeByDate = {};
+    Map<DateTime, double> netIncomeByDate = {};
+
+    // 获取最早和最新日期
+    DateTime earliestDate = DateTime.now();
+    DateTime latestDate = DateTime.now();
+
+    // 处理每条记录
+    for (var record in records) {
+      DateTime date = DateTime.parse(record['timestamp'] ?? '').toLocal();
+      date = DateTime(date.year, date.month, date.day);
+      double amount = double.parse(record['amount'] ?? '0');
+
+      earliestDate = date.isBefore(earliestDate) ? date : earliestDate;
+      latestDate = date.isAfter(latestDate) ? date : latestDate;
+
+      if (record['type'] == '支出') {
+        expenseByDate[date] = (expenseByDate[date] ?? 0) + amount;
+        netIncomeByDate[date] = (netIncomeByDate[date] ?? 0) - amount;
+      } else {
+        incomeByDate[date] = (incomeByDate[date] ?? 0) + amount;
+        netIncomeByDate[date] = (netIncomeByDate[date] ?? 0) + amount;
+      }
+    }
+
+    // 确保每一天都有数据点
+    _expenseSpots = [];
+    _incomeSpots = [];
+    _netIncomeSpots = [];
+    
+    int i = 0;
+    for (DateTime date = earliestDate;
+        date.isBefore(latestDate.add(Duration(days: 1)));
+        date = date.add(Duration(days: 1))) {
+      _expenseSpots.add(FlSpot(i.toDouble(), expenseByDate[date] ?? 0));
+      _incomeSpots.add(FlSpot(i.toDouble(), incomeByDate[date] ?? 0));
+      _netIncomeSpots.add(FlSpot(i.toDouble(), netIncomeByDate[date] ?? 0));
+      i++;
+    }
+
+    // 计算最大最小值用于图表缩放
+    double maxAmount = [
+      ..._expenseSpots.map((spot) => spot.y),
+      ..._incomeSpots.map((spot) => spot.y),
+      ..._netIncomeSpots.map((spot) => spot.y)
+    ].reduce((max, value) => value > max ? value : max);
+
+    double minAmount = [
+      ..._expenseSpots.map((spot) => spot.y),
+      ..._incomeSpots.map((spot) => spot.y),
+      ..._netIncomeSpots.map((spot) => spot.y)
+    ].reduce((min, value) => value < min ? value : min);
+
+    setState(() {
+      _maxY = maxAmount * 1.1;
+      _minY = minAmount * 1.1;
+    });
+  }
+
+  // 修改图表相关的Widget构建
+  Widget _buildChart() {
+    if (_expenseSpots.isEmpty) return SizedBox.shrink();
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final warmColor = _getWarmColor(themeColor, textColor);
+    final coldColor = _getColdColor(themeColor, textColor);
+
+    return Column(
+      children: [
+        // 添加折叠按钮
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('收支趋势', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            IconButton(
+              icon: Icon(_isChartExpanded ? Icons.expand_less : Icons.expand_more),
+              onPressed: () {
+                setState(() {
+                  _isChartExpanded = !_isChartExpanded;
+                  _saveChartExpandedState();  // 保存折叠状态
+                });
+              },
+              tooltip: _isChartExpanded ? '收起图表' : '展开图表',
+            ),
+          ],
+        ),
+        // 使用AnimatedContainer实现平滑的展开/收起效果
+        AnimatedContainer(
+          duration: Duration(milliseconds: 300),
+          height: _isChartExpanded ? 200 : 0,
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Container(
+              height: 200,
+              padding: EdgeInsets.all(16),
+              child: LineChart(
+                LineChartData(
+                  minY: _minY,
+                  maxY: _maxY,
+                  gridData: FlGridData(show: true),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  lineBarsData: [
+                    // 支出线
+                    LineChartBarData(
+                      spots: _expenseSpots,
+                      color: coldColor,
+                      barWidth: 2,
+                      dotData: FlDotData(show: false),
+                    ),
+                    // 收入线
+                    LineChartBarData(
+                      spots: _incomeSpots,
+                      color: warmColor,
+                      barWidth: 2,
+                      dotData: FlDotData(show: false),
+                    ),
+                    // 净收入线
+                    LineChartBarData(
+                      spots: _netIncomeSpots,
+                      color: textColor,
+                      barWidth: 2,
+                      dotData: FlDotData(show: false),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeColor = Theme.of(context).primaryColor;
@@ -671,6 +872,8 @@ class AccountingPageState extends State<AccountingPage> {
                   ),
                 ),
                 SizedBox(height: 16),
+                _buildChart(),  // 添加图表
+                SizedBox(height: 16),
                 // 新增：视切换图标
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -699,7 +902,7 @@ class AccountingPageState extends State<AccountingPage> {
                           : Icons.arrow_downward),
                       onPressed: _toggleSortByTime,
                       tooltip: _sortType == 'time'
-                          ? (_isTimeAscending ? '从旧到新' : '从新到旧')
+                          ? (_isTimeAscending ? '从旧到新' : '从新到')
                           : '按时间排序',
                       color: _sortType == 'time'
                           ? Theme.of(context).primaryColor
@@ -1017,7 +1220,7 @@ class AccountingPageState extends State<AccountingPage> {
     return (color1.red - color1.blue) > (color2.red - color2.blue);
   }
 
-  // 添加颜色选择器方法
+  // 添加颜色选器方法
   Future<Color?> showColorPicker(
       BuildContext context, Color initialColor) async {
     if (!mounted) return null;
@@ -1084,5 +1287,6 @@ class AccountingPageState extends State<AccountingPage> {
       records.removeAt(index);
     });
     _saveRecords(); // 保存更改到本地存储
+    _updateChartData();
   }
 }
