@@ -224,7 +224,8 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: scaffoldBackgroundColor,
       cardTheme: CardTheme(
-        color: cardColor,
+        color: cardColor.withOpacity(cardColor.opacity),
+        elevation: 0,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: primaryColor,
@@ -240,10 +241,12 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         bodyMedium: TextStyle(color: themeTextColor),
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: cardColor,
+        backgroundColor: cardColor.withOpacity(cardColor.opacity),
+        elevation: 0,
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: cardColor,
+        color: cardColor.withOpacity(cardColor.opacity),
+        elevation: 0,
       ),
     );
     themeProvider.setTheme(newTheme);
