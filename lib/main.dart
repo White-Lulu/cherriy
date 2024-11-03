@@ -7,6 +7,7 @@ import 'accountingpage.dart'; // 导入记账页面
 import 'todopage.dart'; // 导入代办页面
 import 'diarypage.dart'; // 导入日记页面
 import 'time_management_page.dart'; // 导入时间管理页面
+import 'dart:io';
 
 // 主函数，应用程序的入口点
 void main() {
@@ -64,6 +65,8 @@ class MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Cherriy (o^^o)♪'), // 设置应用程序的标题
@@ -80,7 +83,17 @@ class MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: _pages[_currentIndex], // 显示当前选中的页面
+      body: Container(
+        decoration: themeProvider.backgroundImage != null
+            ? BoxDecoration(
+                image: DecorationImage(
+                  image: FileImage(File(themeProvider.backgroundImage!)),
+                  fit: BoxFit.cover,
+                ),
+              )
+            : null,
+        child: _pages[_currentIndex],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex, // 当前选中的底部导航栏索引
         onTap: (index) {

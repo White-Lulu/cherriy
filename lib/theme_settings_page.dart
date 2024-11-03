@@ -2,6 +2,8 @@ import 'package:flutter/material.dart'; // 导入Flutter材料设计库
 import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // 导入颜色选择器库
 import 'package:provider/provider.dart'; // 导入状态管理库
 import '../providers/theme_provider.dart'; // 导入主题提供者
+import 'package:image_picker/image_picker.dart'; // 添加这行
+import 'dart:io';
 
 // 定义一个有状态的主题设置页面小部件
 class ThemeSettingsPage extends StatefulWidget {
@@ -15,6 +17,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late Color scaffoldBackgroundColor; // 脚手架背景色
   late Color cardColor; // 卡片颜色
   late Color themeTextColor; // 主题文本颜色
+  String? backgroundImage; // 添加这一行
   late List<Map<String, dynamic>> categories;
   late ThemeProvider themeProvider;
   bool _isEditMode = false;
@@ -49,55 +52,66 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('设置')),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: ListView(
-          children: [
-            _buildColorPicker('主题色Ⅰ', primaryColor, (color) => setState(() => primaryColor = color)),
-            _buildColorPicker('主题色Ⅱ', themeTextColor, (color) => setState(() => themeTextColor = color)),
-            _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
-            _buildColorPicker('卡片颜色', cardColor, (color) => setState(() => cardColor = color)),
-            Divider(),
-            ListTile(
-              title: Text('常用标签'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.edit),
-                    color: _isEditMode ? Theme.of(context).primaryColor : null,
-                    onPressed: () {
-                      setState(() {
-                        _isEditMode = !_isEditMode;
-                        _isDeleteMode = false;
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.delete),
-                    color: _isDeleteMode ? Theme.of(context).primaryColor : null,
-                    onPressed: () {
-                      setState(() {
-                        _isDeleteMode = !_isDeleteMode;
-                        _isEditMode = false;
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: () {
-                      _addCategory();
-                      setState(() {
-                        _isEditMode = false;
-                        _isDeleteMode = false;
-                      });
-                    },
-                  ),
-                ],
+      backgroundColor: scaffoldBackgroundColor,
+      body: Container(
+        decoration: backgroundImage != null
+            ? BoxDecoration(
+                image: DecorationImage(
+                  image: FileImage(File(backgroundImage!)),
+                  fit: BoxFit.cover,
+                ),
+              )
+            : null,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: ListView(
+            children: [
+              _buildColorPicker('主题色Ⅰ', primaryColor, (color) => setState(() => primaryColor = color)),
+              _buildColorPicker('主题色Ⅱ', themeTextColor, (color) => setState(() => themeTextColor = color)),
+              _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
+              _buildColorPicker('卡片颜色', cardColor, (color) => setState(() => cardColor = color)),
+              Divider(),
+              ListTile(
+                title: Text('常用标签'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit),
+                      color: _isEditMode ? Theme.of(context).primaryColor : null,
+                      onPressed: () {
+                        setState(() {
+                          _isEditMode = !_isEditMode;
+                          _isDeleteMode = false;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete),
+                      color: _isDeleteMode ? Theme.of(context).primaryColor : null,
+                      onPressed: () {
+                        setState(() {
+                          _isDeleteMode = !_isDeleteMode;
+                          _isEditMode = false;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: () {
+                        _addCategory();
+                        setState(() {
+                          _isEditMode = false;
+                          _isDeleteMode = false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _buildCategoryList(),
-          ],
+              _buildCategoryList(),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -110,6 +124,33 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   // 构建颜色选择器
   Widget _buildColorPicker(String label, Color color, ValueChanged<Color> onColorChanged) {
+    if (label == '背景色') {
+      return ListTile(
+        title: Text(label),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onTap: () => _showColorPicker(label, color, onColorChanged),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey),
+                ),
+              ),
+            ),
+            SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.image),
+              onPressed: _pickBackgroundImage,
+            ),
+          ],
+        ),
+      );
+    }
     return ListTile(
       title: Text(label),
       trailing: GestureDetector(
@@ -161,6 +202,17 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
+  Future<void> _pickBackgroundImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      setState(() {
+        backgroundImage = image.path;
+      });
+    }
+  }
+
   // 保存主题
   void _saveTheme() {
     final newTheme = ThemeData(
@@ -190,6 +242,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       ),
     );
     themeProvider.setTheme(newTheme);
+    themeProvider.setBackgroundImage(backgroundImage); // 添加这行
     themeProvider.setCategories(categories);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('主题已保存')));
   }

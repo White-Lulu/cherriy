@@ -4,6 +4,15 @@ import 'dart:convert';
 
 class ThemeProvider with ChangeNotifier {
   late ThemeData _themeData;
+  String? _backgroundImage;
+  
+  String? get backgroundImage => _backgroundImage;
+  
+  void setBackgroundImage(String? imagePath) {
+    _backgroundImage = imagePath;
+    notifyListeners();
+  }
+  
   List<Map<String, dynamic>> _categories = [
     {'emoji': '🥗', 'label': '吃饭', 'color': Colors.green},
     {'emoji': '🏠', 'label': '住宿', 'color': Colors.blue},

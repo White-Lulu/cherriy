@@ -26,7 +26,7 @@ class AccountingPageState extends State<AccountingPage> {
   // 存储记账记录的列表
   List<Map<String, String>> records = []; // 存储记账记录的列表
   // 标记是否正在加载数据
-  bool _isLoading = true; // 标记是否正在加载数据
+  //bool _isLoading = true; // 标记是否正在加载数据
   // 交易类型，默认为支出
   String _transactionType = '支出'; // 交易类型，默认为支出
   List<String> selectedCategories = []; // 新增：用于存储多个选中的类别
@@ -129,7 +129,7 @@ class AccountingPageState extends State<AccountingPage> {
   // 从本地存储加载记账记录
   Future<void> _loadRecords() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    //setState(() => _isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? recordsString = prefs.getString('accountingRecords');
@@ -140,12 +140,12 @@ class AccountingPageState extends State<AccountingPage> {
                 .map((item) => Map<String, String>.from(item))
                 .toList()
             : [];
-        _isLoading = false;
+        //_isLoading = false;
         _updateChartData();  // 在这里也调用更新图表
       });
     } catch (e) {
       print('加载记录时出错: $e');
-      if (mounted) setState(() => _isLoading = false);
+      //if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -663,8 +663,8 @@ class AccountingPageState extends State<AccountingPage> {
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: _isLoading
-          ? Center(child: CircularProgressIndicator()) // 显示加载中的进度条
+      child//: _isLoading
+          //? Center(child: CircularProgressIndicator()) // 显示加载中的进度条
           : Column(
               children: [
                 Card(
