@@ -237,13 +237,13 @@ class TodoPageState extends State<TodoPage> {
                       ),
                       if (_expandedStates[category]!)
                         _viewModes[category] == ViewMode.horizontal
-                            ? Container(
+                            ? SizedBox(
                                 height: 120,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: categoryTodos.length,
                                   itemBuilder: (context, index) {
-                                    return Container(
+                                    return SizedBox(
                                       width: 200,
                                       child: _buildTodoCard(categoryTodos[index], 
                                         todos.indexOf(categoryTodos[index])),

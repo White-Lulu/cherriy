@@ -16,9 +16,10 @@ class Task {
   int timeSpent; // 已花费时间（秒）
   bool isCompleted; // 是否完成
   bool isExpanded; // 添加折叠状态
+  int totalDuration;  // 添加总时长属性（秒）
 
   // 构造函数
-  Task(this.name, {this.timeSpent = 0, this.isCompleted = false, this.isExpanded = true});
+  Task(this.name, {this.timeSpent = 0, this.isCompleted = false, this.isExpanded = true, this.totalDuration = 1500});
 
   // 将任务转换为JSON格式
   Map<String, dynamic> toJson() => {
@@ -26,6 +27,7 @@ class Task {
     'timeSpent': timeSpent,
     'isCompleted': isCompleted,
     'isExpanded': isExpanded,
+    'totalDuration': totalDuration,
   };
 
   // 从JSON格式创建任务
@@ -33,7 +35,8 @@ class Task {
       : name = json['name'],
         timeSpent = json['timeSpent'],
         isCompleted = json['isCompleted'],
-        isExpanded = json['isExpanded'] ?? true;
+        isExpanded = json['isExpanded'] ?? true,
+        totalDuration = json['totalDuration'] ?? 1500;
 }
 
 // 定义时间管理页面的状态类
@@ -46,6 +49,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   int _currentTaskIndex = -1; // 当前任务索引
   bool _isCountUp = false; // 是否为正向计时
   int _customDuration = 25 * 60; // 自定义时长（秒）
+  int _newTaskDuration = 1500;  // 添加临时存储任务时长的变量
 
   @override
   void initState() {
@@ -173,6 +177,11 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                     cursorColor:  const Color.fromARGB(255, 214, 214, 214),
                   ),
                 ),
+                IconButton(
+                  icon: Icon(Icons.timer),
+                  onPressed: _showDurationDialog,
+                  tooltip: '设置任务时长',
+                ),
                 SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: _addTask, // 添加任务
@@ -212,8 +221,12 @@ class TimeManagementPageState extends State<TimeManagementPage> {
   void _addTask() {
     if (_taskController.text.isNotEmpty) {
       setState(() {
-        _tasks.add(Task(_taskController.text));
+        _tasks.add(Task(
+          _taskController.text,
+          totalDuration: _newTaskDuration,
+        ));
         _taskController.clear();
+        _newTaskDuration = 1500;  // 重置为默认值
         _saveTasks();
       });
     }
@@ -396,10 +409,85 @@ class TimeManagementPageState extends State<TimeManagementPage> {
     );
   }
 
-  // 构建任务卡片
+  // 添加时长设置对话框
+  void _showDurationDialog() {
+    String? minutes;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('设置任务时长'),
+          content: TextField(
+            decoration: InputDecoration(
+              labelText: '时长（分钟）',
+              hintText: '请输入任务时长',
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) => minutes = value,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _newTaskDuration = 1500;  // 取消时重置为默认值
+              },
+              child: Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (minutes != null) {
+                  int? mins = int.tryParse(minutes!);
+                  if (mins != null && mins > 0) {
+                    setState(() {
+                      _newTaskDuration = mins * 60;
+                    });
+                  }
+                }
+                Navigator.pop(context);
+              },
+              child: Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 修改任务卡片的构建方法
   Widget _buildTaskCard(int index, Task task) {
-    final int totalBars = (task.timeSpent / (25 * 60)).ceil();
+    // 计算总共需要多少个25分钟的进度条
+    final int totalBars = ((task.totalDuration + 1499) ~/ 1500);  // 向上取整
     final bool hasMultipleBars = totalBars > 1;
+    
+    // 计算最后一个进度条的长度比例
+    final double lastBarRatio = (task.totalDuration % 1500) / 1500;
+    
+    // 判断任务是否完成（根据实际时间和设定时间比较）
+    final bool isTaskCompleted = task.timeSpent >= task.totalDuration;
+
+    // 添加构建刻度线的方法
+    List<Widget> buildTimeMarkers(double width, bool isLastBar, double barRatio) {
+      const int markerInterval = 300;  // 5分钟 = 300秒
+      List<Widget> markers = [];
+      int markerCount = isLastBar 
+          ? ((task.totalDuration % 1500) / markerInterval).floor()
+          : (1500 / markerInterval).floor();
+
+      for (int i = 1; i < markerCount; i++) {
+        markers.add(
+          Positioned(
+            left: width * (i * markerInterval / (isLastBar ? task.totalDuration % 1500 : 1500)),
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 1,
+              color: const Color.fromARGB(255, 214, 214, 214),
+            ),
+          ),
+        );
+      }
+      return markers;
+    }
 
     return Card(
       key: ValueKey(task),
@@ -413,64 +501,85 @@ class TimeManagementPageState extends State<TimeManagementPage> {
                   child: Text(
                     task.name,
                     style: TextStyle(
-                      decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                      decoration: isTaskCompleted ? TextDecoration.lineThrough : null,
                     ),
                   ),
                 ),
-                if (hasMultipleBars)
-                  IconButton(
-                    icon: Icon(
-                      task.isExpanded ? Icons.expand_less : Icons.expand_more,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        task.isExpanded = !task.isExpanded;
-                        _saveTasks();
-                      });
-                    },
+                Text(
+                  '${task.timeSpent~/60}/${task.totalDuration~/60} min',  // 修复了除法运算符
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
                   ),
+                ),
               ],
             ),
             subtitle: Column(
               children: [
-                // 第一个进度条（始终显示）
-                LinearProgressIndicator(
-                  value: min(1.0, (task.timeSpent % (25 * 60)) / (25 * 60)),
-                  backgroundColor: const Color.fromARGB(255, 214, 214, 214),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    task.isCompleted ? _getWarmColor(Theme.of(context).primaryColor, Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black) 
-                                  : _getColdColor(Theme.of(context).primaryColor, Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black),
-                  ),
-                ),
-                // 额外的进度条（可折叠）
-                if (hasMultipleBars && task.isExpanded)
-                  ...List.generate(totalBars - 1, (barIndex) {
-                    return Padding(
-                      padding: EdgeInsets.only(top: 4.0),
-                      child: LinearProgressIndicator(
-                        value: barIndex < totalBars - 2 ? 1.0 
-                            : (task.timeSpent - (25 * 60 * (totalBars - 1))) / (25 * 60),
-                        backgroundColor: const Color.fromARGB(255, 214, 214, 214),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          task.isCompleted ? _getWarmColor(Theme.of(context).primaryColor, Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black) 
-                                        : _getColdColor(Theme.of(context).primaryColor, Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black),
-                        ),
+                for (int i = 0; i < totalBars; i++)
+                  if (i == 0 || task.isExpanded)
+                    Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : 4.0),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Stack(
+                            children: [
+                              Stack(
+                                children: [
+                                  // 背景进度条（显示总长度）
+                                  LinearProgressIndicator(
+                                    value: i == totalBars - 1 ? lastBarRatio : 1.0,
+                                    backgroundColor: const Color.fromARGB(255, 214, 214, 214),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      const Color.fromARGB(255, 230, 230, 230),
+                                    ),
+                                  ),
+                                  // 实际进度条
+                                  LinearProgressIndicator(
+                                    value: _calculateProgressForBar(task, i),
+                                    backgroundColor: Colors.transparent,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      isTaskCompleted 
+                                          ? Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black
+                                          : _getColdColor(Theme.of(context).primaryColor, Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // 添加刻度线
+                              ...buildTimeMarkers(
+                                constraints.maxWidth,
+                                i == totalBars - 1,
+                                lastBarRatio,
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    );
-                  }),
+                    ),
               ],
             ),
             trailing: IconButton(
-              icon: Icon(
-                Icons.delete,
-                color: const Color.fromARGB(255, 214, 214, 214),
-              ),
+              icon: Icon(Icons.delete),
               onPressed: () => _deleteTask(index),
             ),
           ),
         ],
       ),
     );
+  }
+
+  // 修改计算每个进度条实际进度的方法
+  double _calculateProgressForBar(Task task, int barIndex) {
+    // 计算这个进度条对应的时间段
+    final int startTime = barIndex * 1500;  // 每个进度条25分钟
+    final int endTime = min((barIndex + 1) * 1500, task.totalDuration);
+    final int barDuration = endTime - startTime;
+    
+    // 计算在这个时间段内已经花费的时间
+    final int spentTimeInThisBar = max(0, min(task.timeSpent - startTime, barDuration));
+    
+    // 返回这个进度条的完成比例
+    return spentTimeInThisBar / 1500.0;  // 统一使用25分钟作为基准
   }
 }
