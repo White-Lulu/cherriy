@@ -84,9 +84,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
     final warmColor = _getWarmColor(Theme.of(context).primaryColor, textColor); // 获取暖色
     final coldColor = _getColdColor(Theme.of(context).primaryColor, textColor); // 获取冷色
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // 设置背景颜色
-      body: Padding(
+    return  Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -213,8 +211,7 @@ class TimeManagementPageState extends State<TimeManagementPage> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   // 添加任务

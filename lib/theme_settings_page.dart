@@ -34,13 +34,15 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   // 加载当前主题颜色
   void _loadCurrentTheme() {
     final theme = themeProvider.themeData;
-    setState(() {
-      primaryColor = theme.primaryColor;
-      scaffoldBackgroundColor = theme.scaffoldBackgroundColor;
-      cardColor = theme.cardTheme.color ?? theme.cardColor;
-      themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor;
-    });
-  }
+  setState(() {
+    primaryColor = theme.primaryColor;
+    scaffoldBackgroundColor = theme.scaffoldBackgroundColor;
+    cardColor = theme.cardTheme.color ?? theme.cardColor;
+    themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor;
+    // 加载保存的背景图片路径
+    backgroundImage = themeProvider.backgroundImage;
+  });
+}
 
   void _loadCategories() {
     setState(() {
@@ -51,7 +53,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('设置')),
+      appBar: AppBar(
+        title: Text('设置'),
+        backgroundColor: primaryColor,
+        foregroundColor: themeTextColor,
+      ),
       backgroundColor: scaffoldBackgroundColor,
       body: Container(
         decoration: backgroundImage != null
@@ -68,8 +74,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
             children: [
               _buildColorPicker('主题色Ⅰ', primaryColor, (color) => setState(() => primaryColor = color)),
               _buildColorPicker('主题色Ⅱ', themeTextColor, (color) => setState(() => themeTextColor = color)),
+              _buildColorPicker('卡片色', cardColor, (color) => setState(() => cardColor = color)),
               _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
-              _buildColorPicker('卡片颜色', cardColor, (color) => setState(() => cardColor = color)),
+              
               Divider(),
               ListTile(
                 title: Text('常用标签'),
@@ -130,6 +137,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              icon: Icon(Icons.image),
+              onPressed: _pickBackgroundImage,
+            ),
+            SizedBox(width: 8),
             GestureDetector(
               onTap: () => _showColorPicker(label, color, onColorChanged),
               child: Container(
@@ -142,11 +154,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 ),
               ),
             ),
-            SizedBox(width: 8),
-            IconButton(
-              icon: Icon(Icons.image),
-              onPressed: _pickBackgroundImage,
-            ),
+            
           ],
         ),
       );
@@ -174,14 +182,13 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        Color selectedColor = initialColor;
         return AlertDialog(
           title: Text('选择颜色'),
           content: SingleChildScrollView(
             child: ColorPicker(
-              pickerColor: selectedColor,
+              pickerColor: initialColor,
               onColorChanged: (color) {
-                selectedColor = color;
+                onColorChanged(color);
               },
               labelTypes: const [],
               pickerAreaHeightPercent: 0.8,
@@ -191,8 +198,6 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
             TextButton(
               child: Text('确定'),
               onPressed: () {
-                onColorChanged(selectedColor);
-                print('$label 颜色已更改为: ${selectedColor.value.toRadixString(16)}');
                 Navigator.of(context).pop();
               },
             ),
