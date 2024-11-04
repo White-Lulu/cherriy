@@ -452,35 +452,12 @@ class AccountingPageState extends State<AccountingPage> {
     });
   }
 
-  // 添加按金额排序的方法
-  void _toggleSortByAmount() {
-    setState(() {
-      if (_sortType != 'amount') {
-        _sortType = 'amount';
-        _isAmountAscending = true;
-      } else {
-        _isAmountAscending = !_isAmountAscending;
-      }
-      _sortRecords();
-    });
-  }
-
-  // 修改原有的时间排序方法
-  void _toggleSortByTime() {
-    setState(() {
-      if (_sortType != 'time') {
-        _sortType = 'time';
-        _isTimeAscending = true;
-      } else {
-        _isTimeAscending = !_isTimeAscending;
-      }
-      _sortRecords();
-    });
-  }
-
-  // 添加排序记录的方法
+  // 修改排序记录的方法
   void _sortRecords() {
-    records.sort((a, b) {
+    // 确定要排序的列表
+    List<Map<String, String>> listToSort = isFiltered ? filteredRecords : records;
+    
+    listToSort.sort((a, b) {
       if (_sortType == 'amount') {
         double amountA = double.parse(a['amount'] ?? '0');
         double amountB = double.parse(b['amount'] ?? '0');
@@ -497,7 +474,42 @@ class AccountingPageState extends State<AccountingPage> {
             : timeB.compareTo(timeA);
       }
     });
-    _saveRecords();
+
+    setState(() {
+      // 如果是筛选状态，更新筛选后的列表
+      if (isFiltered) {
+        filteredRecords = List.from(listToSort);
+      } else {
+        records = List.from(listToSort);
+        _saveRecords();  // 只有在排序原始记录时才保存
+      }
+    });
+  }
+
+  // 修改按金额排序的方法
+  void _toggleSortByAmount() {
+    setState(() {
+      if (_sortType != 'amount') {
+        _sortType = 'amount';
+        _isAmountAscending = true;
+      } else {
+        _isAmountAscending = !_isAmountAscending;
+      }
+      _sortRecords();
+    });
+  }
+
+  // 修改按时间排序的方法
+  void _toggleSortByTime() {
+    setState(() {
+      if (_sortType != 'time') {
+        _sortType = 'time';
+        _isTimeAscending = true;
+      } else {
+        _isTimeAscending = !_isTimeAscending;
+      }
+      _sortRecords();
+    });
   }
 
   // 添加处理图表数据的方法
@@ -844,7 +856,7 @@ class AccountingPageState extends State<AccountingPage> {
                                       ),
                                     ),
                                     cursorColor: const Color.fromARGB(
-                                        255, 214, 214, 214), // 设置获取点时的横线颜色
+                                        255, 214, 214, 214), // 设置获���点时的横线颜色
                                   ),
                                 ),
                               ),
