@@ -8,7 +8,8 @@ import '../utils/color_picker_utils.dart'; // 颜色选择器工具类
 // 主题设置页面的有状态Widget
 class ThemeSettingsPage extends StatefulWidget {
   @override
-  ThemeSettingsPageState createState() => ThemeSettingsPageState(); // 创建对应的State类
+  ThemeSettingsPageState createState() =>
+      ThemeSettingsPageState(); // 创建对应的State类
 }
 
 // 主题设置页面的State类，包含页面的主要逻辑和状态
@@ -20,19 +21,19 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   String? backgroundImage; // 背景图片路径
   late List<Map<String, dynamic>> categories; // 分类列表
   late ThemeProvider themeProvider; // 主题提供者实例
-  
+
   // 编辑模式状态映射，控制不同类型的编辑状态
   Map<String, bool> _editModes = {
     'expense': false, // 支出分类编辑模式
-    'todo': false,    // 待办分类编辑模式
-    'diary': false,   // 日记表情编辑模式
+    'todo': false, // 待办分类编辑模式
+    'diary': false, // 日记表情编辑模式
   };
-  
+
   // 删除模式状态映射，控制不同类型的删除状态
   Map<String, bool> _deleteModes = {
     'expense': false, // 支出分类删除模式
-    'todo': false,    // 待办分类删除模式
-    'diary': false,   // 日记表情删除模式
+    'todo': false, // 待办分类删除模式
+    'diary': false, // 日记表情删除模式
   };
 
   @override
@@ -50,13 +51,15 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     setState(() {
       primaryColor = theme.primaryColor; // 设置主题色
       // 设置背景色，优先使用背景图片，否则使用颜色
-      scaffoldBackgroundColor = backgroundImage != null 
-          ? theme.scaffoldBackgroundColor 
-          : (theme.scaffoldBackgroundColor == Colors.transparent 
-              ? themeProvider.lastBackgroundColor ?? Colors.white // 如果是透明色，使用上次保存的背景色
+      scaffoldBackgroundColor = backgroundImage != null
+          ? theme.scaffoldBackgroundColor
+          : (theme.scaffoldBackgroundColor == Colors.transparent
+              ? themeProvider.lastBackgroundColor ??
+                  Colors.white // 如果是透明色，使用上次保存的背景色
               : theme.scaffoldBackgroundColor);
       cardColor = theme.cardTheme.color ?? theme.cardColor; // 设置卡片颜色
-      themeTextColor = theme.appBarTheme.foregroundColor ?? theme.primaryColor; // 设置文本颜色
+      themeTextColor =
+          theme.appBarTheme.foregroundColor ?? theme.primaryColor; // 设置文本颜色
       backgroundImage = themeProvider.backgroundImage; // 设置背景图片路径
     });
   }
@@ -92,27 +95,33 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           child: ListView(
             children: [
               // 构建各种颜色选择器
-              _buildColorPicker('主题色Ⅰ', primaryColor, (color) => setState(() => primaryColor = color)),
-              _buildColorPicker('主题色Ⅱ', themeTextColor, (color) => setState(() => themeTextColor = color)),
-              _buildColorPicker('卡片色', cardColor, (color) => setState(() => cardColor = color)),
-              _buildColorPicker('背景色', scaffoldBackgroundColor, (color) => setState(() => scaffoldBackgroundColor = color)),
-              
-              Divider(color:primaryColor), // 分隔线
+              _buildColorPicker('主题色Ⅰ', primaryColor,
+                  (color) => setState(() => primaryColor = color)),
+              _buildColorPicker('主题色Ⅱ', themeTextColor,
+                  (color) => setState(() => themeTextColor = color)),
+              _buildColorPicker('卡片色', cardColor,
+                  (color) => setState(() => cardColor = color)),
+              _buildColorPicker('背景色', scaffoldBackgroundColor,
+                  (color) => setState(() => scaffoldBackgroundColor = color)),
+
+              Divider(color: primaryColor), // 分隔线
               // 记账标签设置区域
               ListTile(
                 title: Text('记账标签'),
                 trailing: _buildCategoryActions('expense'), // 构建记账标签的操作按钮
               ),
-              _buildCategoryList(themeProvider.categories, 'expense'), // 显示记账标签列表
-              
-              Divider(color:primaryColor), // 分隔线
+              _buildCategoryList(
+                  themeProvider.categories, 'expense'), // 显示记账标签列表
+
+              Divider(color: primaryColor), // 分隔线
               ListTile(
                 title: Text('待办标签'),
                 trailing: _buildCategoryActions('todo'), // 构建待办事项的操作按钮
               ),
-              _buildCategoryList(themeProvider.todoCategories, 'todo'), // 显示待办标签列表
-              
-              Divider(color:primaryColor), // 分隔线
+              _buildCategoryList(
+                  themeProvider.todoCategories, 'todo'), // 显示待办标签列表
+
+              Divider(color: primaryColor), // 分隔线
               ListTile(
                 title: Text('日记表情'),
                 trailing: _buildEmojiActions(), // 构建日记表情的操作按钮
@@ -131,7 +140,8 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   }
 
   // 构建颜色选择器组件
-  Widget _buildColorPicker(String label, Color color, ValueChanged<Color> onColorChanged) {
+  Widget _buildColorPicker(
+      String label, Color color, ValueChanged<Color> onColorChanged) {
     // 如果是背景色选择器，添加额外的图片选择按钮
     if (label == '背景色') {
       return ListTile(
@@ -159,11 +169,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
             GestureDetector(
               onTap: () async {
                 final Color? newColor = await ColorPickerUtils.showColorPicker(
-                  context, 
+                  context,
                   color,
                   onColorChanged: (Color newColor) {
                     setState(() {
-                      scaffoldBackgroundColor = newColor;  // 直接更新背景色
+                      scaffoldBackgroundColor = newColor; // 直接更新背景色
                     });
                   },
                 );
@@ -185,18 +195,18 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         ),
       );
     }
-    
+
     // 其他颜色选择器
     return ListTile(
       title: Text(label),
       trailing: GestureDetector(
         onTap: () async {
           final Color? newColor = await ColorPickerUtils.showColorPicker(
-            context, 
+            context,
             color,
             onColorChanged: (Color newColor) {
               setState(() {
-                onColorChanged(newColor);  // 实时更新颜色
+                onColorChanged(newColor); // 实时更新颜色
               });
             },
           );
@@ -217,19 +227,10 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
-  // 显示颜色选择器对话框
-  Future<void> _showColorPicker(String label, Color initialColor, ValueChanged<Color> onColorChanged) async {
-    if (!mounted) return;
-    final Color? result = await ColorPickerUtils.showColorPicker(context, initialColor);
-    if (result != null) {
-      onColorChanged(result);
-    }
-  }
-
   Future<void> _pickBackgroundImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       setState(() {
         backgroundImage = image.path;
@@ -241,7 +242,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   void _saveTheme() {
     final newTheme = ThemeData(
       primaryColor: primaryColor,
-      scaffoldBackgroundColor: backgroundImage != null ? Colors.transparent : scaffoldBackgroundColor,
+      scaffoldBackgroundColor: backgroundImage != null
+          ? Colors.transparent
+          : scaffoldBackgroundColor,
       cardTheme: CardTheme(
         color: cardColor.withOpacity(cardColor.opacity),
         //圆角
@@ -279,10 +282,12 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     themeProvider.setTheme(newTheme);
     themeProvider.setBackgroundImage(backgroundImage);
     themeProvider.setCategories(categories);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('主题已保存(o^^o)~')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('主题已保存(o^^o)~')));
   }
 
-  Widget _buildCategoryList(List<Map<String, dynamic>> categories, String type) {
+  Widget _buildCategoryList(
+      List<Map<String, dynamic>> categories, String type) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -307,15 +312,26 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
-                    color: _deleteModes[type]! 
-                        ? WarmColorScorer.getTotalScore(Theme.of(context).primaryColor) > WarmColorScorer.getTotalScore(Theme.of(context).textTheme.bodyMedium!.color!)
+                    color: _deleteModes[type]!
+                        ? WarmColorScorer.getTotalScore(
+                                    Theme.of(context).primaryColor) >
+                                WarmColorScorer.getTotalScore(Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .color!)
                             ? Theme.of(context).primaryColor
                             : Theme.of(context).textTheme.bodyMedium!.color!
-                        : _editModes[type]! 
-                        ?WarmColorScorer.getTotalScore(Theme.of(context).primaryColor) > WarmColorScorer.getTotalScore(Theme.of(context).textTheme.bodyMedium!.color!)
-                            ? Theme.of(context).textTheme.bodyMedium!.color!
-                            : Theme.of(context).primaryColor
-                        : Theme.of(context).cardColor,
+                        : _editModes[type]!
+                            ? WarmColorScorer.getTotalScore(
+                                        Theme.of(context).primaryColor) >
+                                    WarmColorScorer.getTotalScore(
+                                        Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .color!)
+                                ? Theme.of(context).textTheme.bodyMedium!.color!
+                                : Theme.of(context).primaryColor
+                            : Theme.of(context).cardColor,
                     width: 1,
                   ),
                 ),
@@ -334,49 +350,84 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         String emoji = category['emoji'];
         String label = category['label'];
         Color color = category['color'];
-        return AlertDialog(
-          title: Text('编辑类别'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(labelText: 'Emoji'),
-                onChanged: (value) => emoji = value,
-                controller: TextEditingController(text: emoji),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('编辑类别'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: InputDecoration(labelText: 'Emoji'),
+                    onChanged: (value) => emoji = value,
+                    controller: TextEditingController(text: emoji),
+                  ),
+                  TextField(
+                    decoration: InputDecoration(labelText: '标签'),
+                    onChanged: (value) => label = value,
+                    controller: TextEditingController(text: label),
+                  ),
+                  SizedBox(height: 10),
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    child: GestureDetector(
+                      onTap: () async {
+                        final Color? newColor =
+                            await ColorPickerUtils.showColorPicker(
+                          context,
+                          color,
+                          onColorChanged: (Color newColor) {
+                            setDialogState(() {
+                              color = newColor;
+                            });
+                          },
+                        );
+                        if (newColor != null) {
+                          setDialogState(() {
+                            color = newColor;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: color, // 现在应该可以看到颜色变化了
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 214, 214, 214),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          '选择颜色',
+                          style: TextStyle(
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              TextField(
-                decoration: InputDecoration(labelText: '标签'),
-                onChanged: (value) => label = value,
-                controller: TextEditingController(text: label),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                child: Text('选择颜色'),
-                onPressed: () async {
-                  final Color? newColor = await ColorPickerUtils.showColorPicker(context, color);
-                  if (newColor != null) {
-                    color = newColor;
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: Text('保存'),
-              onPressed: () {
-                Navigator.of(context).pop({
-                  'emoji': emoji,
-                  'label': label,
-                  'color': color,
-                });
-              },
-            ),
-          ],
+              actions: [
+                TextButton(
+                  child: Text('取消'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: Text('保存'),
+                  onPressed: () {
+                    Navigator.of(context).pop({
+                      'emoji': emoji,
+                      'label': label,
+                      'color': color,
+                    });
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -409,7 +460,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       );
       return;
     }
-    
+
     final newCategories = themeProvider.todoCategories
         .where((c) => c['id'] != category['id'])
         .toList();
@@ -427,8 +478,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         IconButton(
           icon: Icon(
             Icons.edit,
-            color: _editModes[type]! 
-                ? WarmColorScorer.getTotalScore(Theme.of(context).primaryColor) > WarmColorScorer.getTotalScore(Theme.of(context).textTheme.bodyMedium!.color!)
+            color: _editModes[type]!
+                ? WarmColorScorer.getTotalScore(
+                            Theme.of(context).primaryColor) >
+                        WarmColorScorer.getTotalScore(
+                            Theme.of(context).textTheme.bodyMedium!.color!)
                     ? Theme.of(context).textTheme.bodyMedium!.color!
                     : Theme.of(context).primaryColor
                 : null,
@@ -449,8 +503,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         IconButton(
           icon: Icon(
             Icons.delete,
-            color: _deleteModes[type]! 
-                ? WarmColorScorer.getTotalScore(Theme.of(context).primaryColor) > WarmColorScorer.getTotalScore(Theme.of(context).textTheme.bodyMedium!.color!)
+            color: _deleteModes[type]!
+                ? WarmColorScorer.getTotalScore(
+                            Theme.of(context).primaryColor) >
+                        WarmColorScorer.getTotalScore(
+                            Theme.of(context).textTheme.bodyMedium!.color!)
                     ? Theme.of(context).primaryColor
                     : Theme.of(context).textTheme.bodyMedium!.color!
                 : null,
@@ -481,52 +538,133 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       builder: (BuildContext context) {
         String emoji = '📝';
         String label = '';
-        Color color = Colors.blue;
-        return AlertDialog(
-          title: Text(isTodoCategory ? '添加待办分类' : '添加记账分类'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(labelText: 'Emoji'),
-                onChanged: (value) => emoji = value,
-              ),
-              TextField(
-                decoration: InputDecoration(labelText: '标签'),
-                onChanged: (value) => label = value,
-              ),
-              SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        Color colorrr = themeProvider.themeData.primaryColor;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(isTodoCategory ? '添加待办分类' : '添加记账分类'),
+              titlePadding: EdgeInsets.only(
+                  left: 24, top: 24, right: 24, bottom: 0), // 调整标题padding
+              contentPadding: EdgeInsets.only(
+                  left: 24, top: 6, right: 24, bottom: 20), // 调整内容padding
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                ElevatedButton(
-                  child: Text('选择颜色'),
-                  onPressed: () async {
-                    final Color? newColor = await ColorPickerUtils.showColorPicker(context, color);
-                    if (newColor != null) {
-                      color = newColor;
-                    }
-                  },
-                ),
-                TextButton(
-                  child: Text('取消'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                TextButton(
-                  child: Text('添加'),
-                  onPressed: () {
-                    Navigator.of(context).pop({
-                      'emoji': emoji,
-                      'label': label,
-                      'color': color,
-                      'id': DateTime.now().toString(),
-                    });
-                  },
-                ),
-              ],
-            ),
-          ],
-          ),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Emoji',
+                      labelStyle: TextStyle(
+                        color: const Color.fromARGB(255, 100, 100, 100),
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: const Color.fromARGB(255, 214, 214, 214),
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color:
+                              Theme.of(context).textTheme.bodyMedium?.color ??
+                                  Colors.black,
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    cursorColor: const Color.fromARGB(255, 214, 214, 214),
+                    onChanged: (value) => emoji = value,
+                  ),
+                  SizedBox(height: 7),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: '标签',
+                      labelStyle: TextStyle(
+                        color: const Color.fromARGB(255, 100, 100, 100),
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: const Color.fromARGB(255, 214, 214, 214),
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color:
+                              Theme.of(context).textTheme.bodyMedium?.color ??
+                                  Colors.black,
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    cursorColor: const Color.fromARGB(255, 214, 214, 214),
+                    onChanged: (value) => label = value,
+                  ),
+                  SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          final Color? newColor =
+                              await ColorPickerUtils.showColorPicker(
+                            context,
+                            colorrr,
+                            onColorChanged: (Color color) {
+                              setDialogState(() {
+                                colorrr = color;
+                              });
+                            },
+                          );
+                          if (newColor != null) {
+                            setDialogState(() {
+                              colorrr = newColor;
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: 80,
+                          height: 35,
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: colorrr,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Center(
+                              child: Text(
+                            '选择颜色',
+                            style: TextStyle(color: Colors.black, fontSize: 15),
+                          )),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      TextButton(
+                        child: Text(
+                          '取消',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      TextButton(
+                        child: Text(
+                          '添加',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop({
+                            'emoji': emoji,
+                            'label': label,
+                            'color': colorrr,
+                            'id': DateTime.now().toString(),
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -596,24 +734,62 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         String emoji = '😊';
         return AlertDialog(
           title: Text('添加新表情'),
-          content: TextField(
-            decoration: InputDecoration(labelText: 'Emoji'),
-            onChanged: (value) => emoji = value,
+          titlePadding: EdgeInsets.only(
+              left: 24, top: 24, right: 24, bottom: 0), // 调整标题padding
+          contentPadding: EdgeInsets.only(
+              left: 24, top: 6, right: 24, bottom: 14), // 调整内容padding
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Emoji',
+                  labelStyle: TextStyle(
+                    color: const Color.fromARGB(255, 100, 100, 100),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: const Color.fromARGB(255, 214, 214, 214),
+                      width: 1.5,
+                    ),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).textTheme.bodyMedium?.color ??
+                          Colors.black,
+                      width: 2.0,
+                    ),
+                  ),
+                ),
+                cursorColor: const Color.fromARGB(255, 214, 214, 214),
+                onChanged: (value) => emoji = value,
+              ),
+              SizedBox(height: 5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    child: Text(
+                      '取消',
+                      style: TextStyle(color: Colors.black,fontSize: 15),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  TextButton(
+                    child: Text(
+                      '添加',
+                      style: TextStyle(color: Colors.black,fontSize: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop({
+                        'emoji': emoji,
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              child: Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: Text('添'),
-              onPressed: () {
-                Navigator.of(context).pop({
-                  'emoji': emoji,
-                });
-              },
-            ),
-          ],
         );
       },
     );
@@ -626,7 +802,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   Widget _buildEmojiList(List<Map<String, dynamic>> emojis) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -643,10 +819,10 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _editModes['diary']! 
-                      ? Theme.of(context).primaryColor 
-                      : _deleteModes['diary']! 
-                          ? Colors.red 
+                  color: _editModes['diary']!
+                      ? Theme.of(context).primaryColor
+                      : _deleteModes['diary']!
+                          ? Colors.red
                           : Colors.transparent,
                   width: 1,
                 ),
@@ -703,7 +879,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   void _deleteEmoji(Map<String, dynamic> emoji) {
     final newEmojis = themeProvider.diaryEmojis
-        .where((e) => e['label'] != emoji['label'])
+        .where((e) => e['emoji'] != emoji['emoji'])
         .toList();
     themeProvider.setDiaryEmojis(newEmojis);
   }

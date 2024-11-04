@@ -12,21 +12,27 @@ class ColorPickerUtils {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-          titlePadding: EdgeInsets.all(10),
-          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-          title: Text(''),
-          content: SingleChildScrollView(
-            child: ColorPicker(
-              pickerColor: selectedColor,
-              onColorChanged: (color) {
-                selectedColor = color;
-                onColorChanged?.call(color);
-              },
-              labelTypes: const [],
-              pickerAreaHeightPercent: 0.9,
-            ),
-          ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              titlePadding: EdgeInsets.all(10),
+              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              title: Text(''),
+              content: SingleChildScrollView(
+                child: ColorPicker(
+                  pickerColor: selectedColor,
+                  onColorChanged: (color) {
+                    setState(() {
+                      selectedColor = color;
+                    });
+                    onColorChanged?.call(color);
+                  },
+                  labelTypes: const [],
+                  pickerAreaHeightPercent: 0.9,
+                ),
+              ),
+            );
+          },
         );
       },
     ).then((value) => value ?? selectedColor);

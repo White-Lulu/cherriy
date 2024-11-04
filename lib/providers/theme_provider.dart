@@ -29,10 +29,10 @@ class ThemeProvider with ChangeNotifier {
   ];
   
   List<Map<String, dynamic>> _diaryEmojis = [
-    {'emoji': '😊', 'label': '开心', 'color': Colors.yellow},
-    {'emoji': '😢', 'label': '难过', 'color': Colors.blue},
-    {'emoji': '😡', 'label': '生气', 'color': Colors.red},
-    {'emoji': '😴', 'label': '疲惫', 'color': Colors.purple},
+    {'emoji': '😊'},
+    {'emoji': '😢'},
+    {'emoji': '😡'},
+    {'emoji': '😴'},
   ];
   
   ThemeProvider(ThemeData initialTheme) {
@@ -107,6 +107,9 @@ class ThemeProvider with ChangeNotifier {
       ),
       dialogTheme: DialogTheme(
         backgroundColor: Color(primaryColor).withOpacity(0.8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: Color(primaryColor).withOpacity(0.8),
@@ -119,7 +122,7 @@ class ThemeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-
+  
 
   Future<void> loadCategories() async {
     final prefs = await SharedPreferences.getInstance();
@@ -157,8 +160,6 @@ class ThemeProvider with ChangeNotifier {
       final List<dynamic> decodedEmojis = json.decode(emojisJson);
       _diaryEmojis = decodedEmojis.map((e) => {
         'emoji': e['emoji'],
-        'label': e['label'],
-        'color': Color(e['color']),
       }).toList();
       notifyListeners();
     }
@@ -197,8 +198,6 @@ class ThemeProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final emojisJson = json.encode(_diaryEmojis.map((e) => {
       'emoji': e['emoji'],
-      'label': e['label'],
-      'color': (e['color'] as Color).value,
     }).toList());
     await prefs.setString('diaryEmojis', emojisJson);
   }
@@ -230,7 +229,7 @@ class WarmColorScorer {
     } else if (hue >= 180 && hue < 300) {
       return 0.0 + (hue - 180) / 120.0;
     } else {
-      return 0.5;  // 过渡色
+      return 0.5;  // ���渡色
     }
   }
 
