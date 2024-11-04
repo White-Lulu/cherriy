@@ -802,9 +802,10 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   Widget _buildEmojiList(List<Map<String, dynamic>> emojis) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      child: Wrap(
-        spacing: 8,
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Center(
+        child: Wrap(
+          spacing: 8,
         runSpacing: 8,
         children: emojis.map((emoji) {
           return GestureDetector(
@@ -835,6 +836,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
             ),
           );
         }).toList(),
+      ),
       ),
     );
   }
