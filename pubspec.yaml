@@ -24,6 +24,8 @@ dependencies: # 依赖项*3
 
   fl_chart: ^0.66.2
 
+  flutter_riverpod: ^2.6.1
+
 dev_dependencies: # 开发依赖项
   flutter_test: # Flutter的测试框架
     sdk: flutter

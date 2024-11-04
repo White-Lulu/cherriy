@@ -93,6 +93,13 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 trailing: _buildTodoCategoryActions(),
               ),
               _buildCategoryList(themeProvider.todoCategories),
+              
+              Divider(),
+              ListTile(
+                title: Text('日记表情'),
+                trailing: _buildEmojiActions(),
+              ),
+              _buildEmojiList(themeProvider.diaryEmojis),
             ],
           ),
         ),
@@ -574,5 +581,150 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         themeProvider.setCategories(newCategories);
       }
     }
+  }
+
+  Widget _buildEmojiActions() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(Icons.edit),
+          onPressed: () {
+            setState(() {
+              _isEditMode = !_isEditMode;
+              _isDeleteMode = false;
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.delete),
+          onPressed: () {
+            setState(() {
+              _isDeleteMode = !_isDeleteMode;
+              _isEditMode = false;
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _addEmoji(),
+        ),
+      ],
+    );
+  }
+
+  void _addEmoji() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) {
+        String emoji = '😊';
+        return AlertDialog(
+          title: Text('添加新表情'),
+          content: TextField(
+            decoration: InputDecoration(labelText: 'Emoji'),
+            onChanged: (value) => emoji = value,
+          ),
+          actions: [
+            TextButton(
+              child: Text('取消'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('添加'),
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'emoji': emoji,
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      final newEmojis = [...themeProvider.diaryEmojis, result];
+      themeProvider.setDiaryEmojis(newEmojis);
+    }
+  }
+
+  Widget _buildEmojiList(List<Map<String, dynamic>> emojis) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: emojis.map((emoji) {
+          return GestureDetector(
+            onTap: () {
+              if (_isEditMode) {
+                _editEmoji(emoji);
+              } else if (_isDeleteMode) {
+                _deleteEmoji(emoji);
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _isDeleteMode ? Colors.red : Colors.transparent,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                emoji['emoji'],
+                style: TextStyle(fontSize: 24),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  void _editEmoji(Map<String, dynamic> emoji) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) {
+        String newEmoji = emoji['emoji'];
+        return AlertDialog(
+          title: Text('编辑表情'),
+          content: TextField(
+            decoration: InputDecoration(labelText: 'Emoji'),
+            controller: TextEditingController(text: newEmoji),
+            onChanged: (value) => newEmoji = value,
+          ),
+          actions: [
+            TextButton(
+              child: Text('取消'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('保存'),
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'emoji': newEmoji,
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      final index = themeProvider.diaryEmojis.indexOf(emoji);
+      final newEmojis = [...themeProvider.diaryEmojis];
+      newEmojis[index] = result;
+      themeProvider.setDiaryEmojis(newEmojis);
+    }
+  }
+
+  void _deleteEmoji(Map<String, dynamic> emoji) {
+    final newEmojis = themeProvider.diaryEmojis
+        .where((e) => e['label'] != emoji['label'])
+        .toList();
+    themeProvider.setDiaryEmojis(newEmojis);
   }
 }

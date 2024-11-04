@@ -28,16 +28,25 @@ class ThemeProvider with ChangeNotifier {
     {'emoji': '💼', 'label': '工作', 'color': Colors.orange, 'id': 'work'},
   ];
   
+  List<Map<String, dynamic>> _diaryEmojis = [
+    {'emoji': '😊', 'label': '开心', 'color': Colors.yellow},
+    {'emoji': '😢', 'label': '难过', 'color': Colors.blue},
+    {'emoji': '😡', 'label': '生气', 'color': Colors.red},
+    {'emoji': '😴', 'label': '疲惫', 'color': Colors.purple},
+  ];
+  
   ThemeProvider(ThemeData initialTheme) {
     _themeData = initialTheme;
     loadTheme();
     loadCategories();
     loadTodoCategories();
+    loadDiaryEmojis();
   }
 
   ThemeData get themeData => _themeData;
   List<Map<String, dynamic>> get categories => _categories;
   List<Map<String, dynamic>> get todoCategories => _todoCategories;
+  List<Map<String, dynamic>> get diaryEmojis => _diaryEmojis;
 
   Future<void> setTheme(ThemeData theme) async {
     if (theme.scaffoldBackgroundColor != Colors.transparent) {
@@ -58,6 +67,12 @@ class ThemeProvider with ChangeNotifier {
     _todoCategories = categories;
     notifyListeners();
     await _saveTodoCategories();
+  }
+
+  Future<void> setDiaryEmojis(List<Map<String, dynamic>> emojis) async {
+    _diaryEmojis = emojis;
+    notifyListeners();
+    await _saveDiaryEmojis();
   }
 
   Future<void> loadTheme() async {
@@ -125,6 +140,20 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
+  Future<void> loadDiaryEmojis() async {
+    final prefs = await SharedPreferences.getInstance();
+    final emojisJson = prefs.getString('diaryEmojis');
+    if (emojisJson != null) {
+      final List<dynamic> decodedEmojis = json.decode(emojisJson);
+      _diaryEmojis = decodedEmojis.map((e) => {
+        'emoji': e['emoji'],
+        'label': e['label'],
+        'color': Color(e['color']),
+      }).toList();
+      notifyListeners();
+    }
+  }
+
   Future<void> _saveTheme() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('primaryColor', _themeData.primaryColor.value);
@@ -152,6 +181,16 @@ class ThemeProvider with ChangeNotifier {
       'id': c['id'],
     }).toList());
     await prefs.setString('todoCategories', categoriesJson);
+  }
+
+  Future<void> _saveDiaryEmojis() async {
+    final prefs = await SharedPreferences.getInstance();
+    final emojisJson = json.encode(_diaryEmojis.map((e) => {
+      'emoji': e['emoji'],
+      'label': e['label'],
+      'color': (e['color'] as Color).value,
+    }).toList());
+    await prefs.setString('diaryEmojis', emojisJson);
   }
 
   void removeTemporaryCategories() {

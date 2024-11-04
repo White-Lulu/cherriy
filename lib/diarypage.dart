@@ -4,6 +4,8 @@ import 'dart:convert'; // 导入JSON编解码支持
 import 'dart:io'; // 添加这一行
 import 'package:intl/intl.dart'; // 导入国际化日期格式化库
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart'; // 改用 provider 包
+import './providers/theme_provider.dart';
 
 // 日记页面
 class DiaryPage extends StatefulWidget {
@@ -20,9 +22,9 @@ class DiaryPageState extends State<DiaryPage> {
   // 存储日记条目的列表
   List<Map<String, String>> diaries = [];
   // 当前选择的心情
-  String _selectedMood = '😊';
-  // 可选的心情列表
-  final List<String> _moods = ['😊', '😐', '😢', '😎', '😴','🤣','🥰',];
+  String? selectedEmoji;
+  List<Map<String, dynamic>> temporaryEmojis = [];
+  late ThemeProvider themeProvider;
 
   // 添加新的状态变量
   bool _isReversed = false;
@@ -42,6 +44,8 @@ class DiaryPageState extends State<DiaryPage> {
   void initState() {
     super.initState();
     _loadDiaries();  // 初始化时加载日记
+    temporaryEmojis = []; // 重置临时emoji列表
+    themeProvider = Provider.of<ThemeProvider>(context, listen: false);
   }
 
   // 从本地存储加载日记
@@ -68,19 +72,25 @@ class DiaryPageState extends State<DiaryPage> {
 
   // 修改添加日记的方法
   void _addDiary() {
-    if (_diaryController.text.isNotEmpty) {
+    if (_diaryController.text.isNotEmpty && selectedEmoji != null) {
       final now = DateTime.now();
       final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
       setState(() {
         diaries.add({
           'date': formattedDate,
           'content': _diaryController.text,
-          'mood': _selectedMood,
-          'imagePaths': jsonEncode(_selectedImagePaths), // 将图片路径列表转换为JSON字符串
+          'mood': selectedEmoji!,
+          'imagePaths': jsonEncode(_selectedImagePaths),
         });
         _saveDiaries();
         _diaryController.clear();
-        _selectedImagePaths = []; // 清除已选择的图片
+        _selectedImagePaths = [];
+        
+        // 如果使用的是临时emoji，则移除它
+        if (temporaryEmojis.any((e) => e['emoji'] == selectedEmoji)) {
+          temporaryEmojis.removeWhere((e) => e['emoji'] == selectedEmoji);
+        }
+        selectedEmoji = null;
       });
     }
   }
@@ -99,18 +109,74 @@ class DiaryPageState extends State<DiaryPage> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // 心情选择器
-          Row(
-            children: _moods.map((mood) {
-              return IconButton(
-                icon: Text(mood, style: TextStyle(fontSize: 24)),
-                onPressed: () {
-                  setState(() {
-                    _selectedMood = mood;
-                  });
-                },
-              );
-            }).toList(),
+          // 替换原来的心情选择器
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ...themeProvider.diaryEmojis.map((emoji) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedEmoji = selectedEmoji == emoji['emoji'] ? null : emoji['emoji'];
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: selectedEmoji == emoji['emoji'] 
+                                ? Theme.of(context).primaryColor 
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          emoji['emoji'],
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                ...temporaryEmojis.map((emoji) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedEmoji = selectedEmoji == emoji['emoji'] ? null : emoji['emoji'];
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: selectedEmoji == emoji['emoji'] 
+                                ? Theme.of(context).primaryColor 
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          emoji['emoji'],
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                // 添加临时emoji的按钮
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline),
+                  onPressed: _addTemporaryEmoji,
+                ),
+              ],
+            ),
           ),
           // 日记输入框
           TextField(
@@ -309,7 +375,7 @@ class DiaryPageState extends State<DiaryPage> {
                 );
               },
             ),
-            // 关闭按钮
+            // 关闭钮
             Positioned(
               right: 10,
               top: 10,
@@ -322,6 +388,44 @@ class DiaryPageState extends State<DiaryPage> {
         ),
       ),
     );
+  }
+
+  // 添加临时表情的方法
+  void _addTemporaryEmoji() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) {
+        String emoji = '😊';
+        return AlertDialog(
+          title: Text('添加临时表情'),
+          content: TextField(
+            decoration: InputDecoration(labelText: 'Emoji'),
+            onChanged: (value) => emoji = value,
+          ),
+          actions: [
+            TextButton(
+              child: Text('取消'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('添加'),
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'emoji': emoji,
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        temporaryEmojis.add(result);
+        selectedEmoji = result['emoji'];
+      });
+    }
   }
 }
 
