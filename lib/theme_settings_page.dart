@@ -82,44 +82,17 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               
               Divider(),
               ListTile(
-                title: Text('常用标签'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      color: _isEditMode ? Theme.of(context).primaryColor : null,
-                      onPressed: () {
-                        setState(() {
-                          _isEditMode = !_isEditMode;
-                          _isDeleteMode = false;
-                        });
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.delete),
-                      color: _isDeleteMode ? Theme.of(context).primaryColor : null,
-                      onPressed: () {
-                        setState(() {
-                          _isDeleteMode = !_isDeleteMode;
-                          _isEditMode = false;
-                        });
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () {
-                        _addCategory();
-                        setState(() {
-                          _isEditMode = false;
-                          _isDeleteMode = false;
-                        });
-                      },
-                    ),
-                  ],
-                ),
+                title: Text('记账标签'),
+                trailing: _buildCategoryActions(),
               ),
-              _buildCategoryList(),
+              _buildCategoryList(themeProvider.categories),
+              
+              Divider(),
+              ListTile(
+                title: Text('待办事项标签'),
+                trailing: _buildTodoCategoryActions(),
+              ),
+              _buildCategoryList(themeProvider.todoCategories),
             ],
           ),
         ),
@@ -267,7 +240,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('主题已保存')));
   }
 
-  Widget _buildCategoryList() {
+  Widget _buildCategoryList(List<Map<String, dynamic>> categories) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -292,7 +265,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
-                    color: Theme.of(context).cardColor,
+                    color: _isDeleteMode ? Colors.red : Theme.of(context).cardColor,
                     width: 1,
                   ),
                 ),
@@ -369,20 +342,24 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   void _deleteCategory(Map<String, dynamic> category) {
     setState(() {
-      categories.remove(category);
+      if (categories.contains(category)) {
+        categories.remove(category);
+        _saveCategories();
+      } else if (themeProvider.todoCategories.contains(category)) {
+        _deleteTodoCategory(category);
+      }
     });
-    _saveCategories();
   }
 
-  void _addCategory() async {
+  void _addTodoCategory() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext context) {
-        String emoji = '😀';
+        String emoji = '📝';
         String label = '';
         Color color = Colors.blue;
         return AlertDialog(
-          title: Text('添加新类别'),
+          title: Text('添加新待办分类'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -417,6 +394,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   'emoji': emoji,
                   'label': label,
                   'color': color,
+                  'id': DateTime.now().toString(),
                 });
               },
             ),
@@ -426,11 +404,23 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
 
     if (result != null) {
-      setState(() {
-        categories.add(result);
-      });
-      _saveCategories();
+      final newCategories = [...themeProvider.todoCategories, result];
+      themeProvider.setTodoCategories(newCategories);
     }
+  }
+
+  void _deleteTodoCategory(Map<String, dynamic> category) {
+    if (category['id'] == 'none') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('无分类不能删除')),
+      );
+      return;
+    }
+    
+    final newCategories = themeProvider.todoCategories
+        .where((c) => c['id'] != category['id'])
+        .toList();
+    themeProvider.setTodoCategories(newCategories);
   }
 
   void _saveCategories() {
@@ -461,5 +451,128 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         );
       },
     );
+  }
+
+  Widget _buildCategoryActions() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(Icons.edit),
+          onPressed: () {
+            setState(() {
+              _isEditMode = !_isEditMode;
+              _isDeleteMode = false;
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.delete),
+          onPressed: () {
+            setState(() {
+              _isDeleteMode = !_isDeleteMode;
+              _isEditMode = false;
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _addCategory(false),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodoCategoryActions() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(Icons.edit),
+          onPressed: () {
+            setState(() {
+              _isEditMode = !_isEditMode;
+              _isDeleteMode = false;
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.delete),
+          onPressed: () {
+            setState(() {
+              _isDeleteMode = !_isDeleteMode;
+              _isEditMode = false;
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _addCategory(true),
+        ),
+      ],
+    );
+  }
+
+  void _addCategory(bool isTodoCategory) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) {
+        String emoji = '📝';
+        String label = '';
+        Color color = Colors.blue;
+        return AlertDialog(
+          title: Text(isTodoCategory ? '添加新待办分类' : '添加新类别'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(labelText: 'Emoji'),
+                onChanged: (value) => emoji = value,
+              ),
+              TextField(
+                decoration: InputDecoration(labelText: '标签'),
+                onChanged: (value) => label = value,
+              ),
+              ElevatedButton(
+                child: Text('选择颜色'),
+                onPressed: () async {
+                  final Color? newColor = await showColorPicker(context, color);
+                  if (newColor != null) {
+                    color = newColor;
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text('取消'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('添加'),
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'emoji': emoji,
+                  'label': label,
+                  'color': color,
+                  'id': DateTime.now().toString(),
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      if (isTodoCategory) {
+        final newCategories = [...themeProvider.todoCategories, result];
+        themeProvider.setTodoCategories(newCategories);
+      } else {
+        final newCategories = [...themeProvider.categories, result];
+        themeProvider.setCategories(newCategories);
+      }
+    }
   }
 }

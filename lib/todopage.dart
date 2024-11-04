@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart'; // 导入Flutter材料设计库
 import 'package:shared_preferences/shared_preferences.dart'; // 导入本地存储库
 import 'dart:convert'; // 导入JSON编解码支持
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
+//import 'package:fl_chart/fl_chart.dart';
 
 // 添加新的枚举和状态
 enum TodoCategory { none, study, work }
@@ -15,130 +18,25 @@ class TodoPage extends StatefulWidget {
 class TodoPageState extends State<TodoPage> {
   // 用于控制输入的待办事项文本
   final _todoController = TextEditingController();
+   // 存储代办记录的列表
+  List<Map<String, dynamic>> todos = []; // 存储记账记录的列表
   
-  // 存储待办事项的列表
-  List<Map<String, dynamic>> todos = [];
+  String _selectedCategoryId = 'none';
 
-  TodoCategory _selectedCategory = TodoCategory.none;
-  Map<TodoCategory, bool> _expandedStates = {
-    TodoCategory.none: true,
-    TodoCategory.study: true,
-    TodoCategory.work: true,
-  };
-  Map<TodoCategory, ViewMode> _viewModes = {
-    TodoCategory.none: ViewMode.horizontal,
-    TodoCategory.study: ViewMode.horizontal,
-    TodoCategory.work: ViewMode.horizontal,
-  };
+  Map<String, bool> _expandedStates = {};
 
-  // 添加保存视图模式的方法
-  void _saveViewModes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final viewModesMap = _viewModes.map(
-      (key, value) => MapEntry(key.toString(), value.toString())
-    );
-    await prefs.setString('todoViewModes', jsonEncode(viewModesMap));
-  }
+  Map<String, ViewMode> _viewModes = {};
 
-  // 添加加载视图模式的方法
-  void _loadViewModes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? savedViewModes = prefs.getString('todoViewModes');
-    if (savedViewModes != null) {
-      final Map<String, dynamic> viewModesMap = jsonDecode(savedViewModes);
-      setState(() {
-        _viewModes = viewModesMap.map((key, value) => MapEntry(
-          TodoCategory.values.firstWhere((e) => e.toString() == key),
-          ViewMode.values.firstWhere((e) => e.toString() == value),
-        ));
-      });
-    }
-  }
+  // 添加一个监听器变量
+  late VoidCallback _listener;
 
-  // 添加保存折叠状态的方法
-  Future<void> _saveExpandedStates() async {
-    final prefs = await SharedPreferences.getInstance();
-    final expandedStatesMap = _expandedStates.map(
-      (key, value) => MapEntry(key.toString(), value)
-    );
-    await prefs.setString('todoExpandedStates', jsonEncode(expandedStatesMap));
-  }
-
-  // 添加加载折叠状态的方法
-  Future<void> _loadExpandedStates() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? savedStates = prefs.getString('todoExpandedStates');
-    if (savedStates != null) {
-      final Map<String, dynamic> statesMap = jsonDecode(savedStates);
-      setState(() {
-        _expandedStates = statesMap.map((key, value) => MapEntry(
-          TodoCategory.values.firstWhere((e) => e.toString() == key),
-          value as bool,
-        ));
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTodos();
-    _loadViewModes();  // 加载保存的视图模式
-    _loadExpandedStates();  // 加载折叠状态
-  }
-
-  // 从本地存储加载待办事项
-  void _loadTodos() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedTodos = prefs.getString('todoList');
-    setState(() {
-      todos = savedTodos != null
-          ? List<Map<String, dynamic>>.from(jsonDecode(savedTodos))
-          : [];
-    });
-    }
-
-  // 保存待办事项到本地存储
-  void _saveTodos() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('todoList', jsonEncode(todos));
-  }
-
-  // 添加新的待办事项
-  void _addTodo() {
-    if (_todoController.text.isNotEmpty) {
-      setState(() {
-        todos.add({
-          'task': _todoController.text,
-          'completed': false,
-          'category': _selectedCategory.toString(),
-        });
-        _saveTodos();
-        _todoController.clear();
-      });
-    }
-  }
-
-  // 切换待办事项的完成状态
-  void _toggleComplete(int index) {
-    setState(() {
-      todos[index]['completed'] = !todos[index]['completed'];
-      _saveTodos();  // 更新状态后保存数据
-    });
-  }
-
-  // 删除待办事项
-  void _deleteTodo(int index) {
-    setState(() {
-      todos.removeAt(index);
-      _saveTodos();
-    });
-  }
+  // 添加一个成员变量来存储 Provider 的引用
+  late final ThemeProvider _themeProvider;
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Theme.of(context).primaryColor;
-    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -148,25 +46,23 @@ class TodoPageState extends State<TodoPage> {
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  PopupMenuButton<TodoCategory>(
+                  PopupMenuButton<String>(
                     icon: Icon(Icons.category),
-                    onSelected: (TodoCategory category) {
-                      setState(() => _selectedCategory = category);
+                    onSelected: (String categoryId) {
+                      setState(() => _selectedCategoryId = categoryId);
                     },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: TodoCategory.none,
-                        child: Text('无分类'),
-                      ),
-                      PopupMenuItem(
-                        value: TodoCategory.study,
-                        child: Text('学习'),
-                      ),
-                      PopupMenuItem(
-                        value: TodoCategory.work,
-                        child: Text('工作'),
-                      ),
-                    ],
+                    itemBuilder: (context) => themeProvider.todoCategories
+                        .map((category) => PopupMenuItem<String>(
+                              value: category['id'],
+                              child: Row(
+                                children: [
+                                  Text(category['emoji']),
+                                  SizedBox(width: 8),
+                                  Text(category['label']),
+                                ],
+                              ),
+                            ))
+                        .toList(),
                   ),
                   Expanded(
                     child: TextField(
@@ -188,9 +84,9 @@ class TodoPageState extends State<TodoPage> {
           // 显示待办事项列表
           Expanded(
             child: ListView(
-              children: TodoCategory.values.map((category) {
+              children: themeProvider.todoCategories.map((category) {
                 final categoryTodos = todos.where(
-                  (todo) => todo['category'] == category.toString()
+                  (todo) => todo['category'] == category['id']
                 ).toList();
 
                 if (categoryTodos.isEmpty) return SizedBox.shrink();
@@ -200,43 +96,52 @@ class TodoPageState extends State<TodoPage> {
                   child: Column(
                     children: [
                       ListTile(
-                        leading: Text(
-                          category == TodoCategory.none ? '无分类' :
-                          category == TodoCategory.study ? '学习' : '工作',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        leading: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(category['emoji']),
+                            SizedBox(width: 8),
+                            Text(
+                              category['label'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: category['color'],
+                              ),
+                            ),
+                          ],
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: Icon(_viewModes[category] == ViewMode.horizontal
+                              icon: Icon(_viewModes[category['id']] == ViewMode.horizontal
                                   ? Icons.view_module
                                   : Icons.view_list),
                               onPressed: () {
                                 setState(() {
-                                  _viewModes[category] = _viewModes[category] == ViewMode.horizontal
+                                  _viewModes[category['id']] = _viewModes[category['id']] == ViewMode.horizontal
                                       ? ViewMode.vertical
                                       : ViewMode.horizontal;
-                                  _saveViewModes();  // 保存视图模式的更改
+                                  _saveViewModes();
                                 });
                               },
                             ),
                             IconButton(
-                              icon: Icon(_expandedStates[category]!
+                              icon: Icon(_expandedStates[category['id']] ?? true
                                   ? Icons.expand_less
                                   : Icons.expand_more),
                               onPressed: () {
                                 setState(() {
-                                  _expandedStates[category] = !_expandedStates[category]!;
-                                  _saveExpandedStates();  // 保存折叠状态
+                                  _expandedStates[category['id']] = !(_expandedStates[category['id']] ?? true);
+                                  _saveExpandedStates();
                                 });
                               },
                             ),
                           ],
                         ),
                       ),
-                      if (_expandedStates[category]!)
-                        _viewModes[category] == ViewMode.horizontal
+                      if (_expandedStates[category['id']] ?? true)
+                        _viewModes[category['id']] == ViewMode.horizontal
                             ? SizedBox(
                                 height: 120,
                                 child: ListView.builder(
@@ -293,5 +198,140 @@ class TodoPageState extends State<TodoPage> {
         ),
       ),
     );
+  }
+
+  // 添加新的待办事项
+  void _addTodo() {
+    if (_todoController.text.isNotEmpty) {
+      setState(() {
+        todos.add({
+          'task': _todoController.text,
+          'completed': false,
+          'category': _selectedCategoryId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch, // 添加时间戳
+        });
+        _saveTodos();
+        _todoController.clear();
+      });
+    }
+  }
+
+  // 切换待办事项的完成状态
+  void _toggleComplete(int index) {
+    setState(() {
+      todos[index]['completed'] = !todos[index]['completed'];
+      _saveTodos();  // 更新状态后保存数据
+    });
+  }
+
+  // 删除待办事项
+  void _deleteTodo(int index) {
+    setState(() {
+      todos.removeAt(index);
+      _saveTodos();
+    });
+  }
+
+  // 添加保存视图模式的方法
+  void _saveViewModes() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('todoViewModes', jsonEncode(_viewModes.map(
+      (key, value) => MapEntry(key, value.toString())
+    )));
+  }
+
+  // 添加加载视图模式的方法
+  void _loadViewModes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedViewModes = prefs.getString('todoViewModes');
+    if (savedViewModes != null) {
+      final Map<String, dynamic> viewModesMap = jsonDecode(savedViewModes);
+      setState(() {
+        _viewModes = viewModesMap.map((key, value) => MapEntry(
+          key,
+          ViewMode.values.firstWhere((e) => e.toString() == value)
+        ));
+      });
+    }
+    // 为所有类别设置默认视图模式
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    for (var category in themeProvider.todoCategories) {
+      if (!_viewModes.containsKey(category['id'])) {
+        _viewModes[category['id']] = ViewMode.vertical;
+      }
+    }
+  }
+
+  // 修改保存折叠状态的方法
+  Future<void> _saveExpandedStates() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('todoExpandedStates', jsonEncode(_expandedStates));
+  }
+
+  // 修改加载折叠状态的方法
+  Future<void> _loadExpandedStates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedStates = prefs.getString('todoExpandedStates');
+    if (savedStates != null) {
+      setState(() {
+        _expandedStates = Map<String, bool>.from(jsonDecode(savedStates));
+      });
+    }
+    // 为所有类别设置默认折叠状态
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    for (var category in themeProvider.todoCategories) {
+      if (!_expandedStates.containsKey(category['id'])) {
+        _expandedStates[category['id']] = true;
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodos();
+    _loadViewModes();
+    _loadExpandedStates();
+    
+    // 在 initState 中获取并保存 Provider 的引用
+    _themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    // 定义监听器函数
+    _listener = () {
+      if (mounted) {
+        setState(() {});
+      }
+    };
+
+    // 添加监听器
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _themeProvider.addListener(_listener);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _themeProvider.removeListener(_listener);
+    _todoController.dispose();
+    super.dispose();
+  }
+
+  // 从本地存储加载待办事项
+  void _loadTodos() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? savedTodos = prefs.getString('todoList');
+    setState(() {
+      todos = savedTodos != null
+          ? List<Map<String, dynamic>>.from(jsonDecode(savedTodos))
+          : [];
+    });
+    }
+
+  // 保存待办事项到本地存储
+  void _saveTodos() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('todoList', jsonEncode(todos));
   }
 }

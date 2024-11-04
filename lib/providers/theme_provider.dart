@@ -22,14 +22,22 @@ class ThemeProvider with ChangeNotifier {
     {'emoji': '🎉', 'label': '娱乐', 'color': Colors.purple},
   ];
   
+  List<Map<String, dynamic>> _todoCategories = [
+    {'emoji': '📝', 'label': '无分类', 'color': Colors.grey, 'id': 'none'},
+    {'emoji': '📚', 'label': '学习', 'color': Colors.blue, 'id': 'study'},
+    {'emoji': '💼', 'label': '工作', 'color': Colors.orange, 'id': 'work'},
+  ];
+  
   ThemeProvider(ThemeData initialTheme) {
     _themeData = initialTheme;
     loadTheme();
     loadCategories();
+    loadTodoCategories();
   }
 
   ThemeData get themeData => _themeData;
   List<Map<String, dynamic>> get categories => _categories;
+  List<Map<String, dynamic>> get todoCategories => _todoCategories;
 
   Future<void> setTheme(ThemeData theme) async {
     if (theme.scaffoldBackgroundColor != Colors.transparent) {
@@ -44,6 +52,12 @@ class ThemeProvider with ChangeNotifier {
     _categories = categories;
     notifyListeners();
     await _saveCategories();
+  }
+
+  Future<void> setTodoCategories(List<Map<String, dynamic>> categories) async {
+    _todoCategories = categories;
+    notifyListeners();
+    await _saveTodoCategories();
   }
 
   Future<void> loadTheme() async {
@@ -96,6 +110,21 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
+  Future<void> loadTodoCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final categoriesJson = prefs.getString('todoCategories');
+    if (categoriesJson != null) {
+      final List<dynamic> decodedCategories = json.decode(categoriesJson);
+      _todoCategories = decodedCategories.map((c) => {
+        'emoji': c['emoji'],
+        'label': c['label'],
+        'color': Color(c['color']),
+        'id': c['id'],
+      }).toList();
+      notifyListeners();
+    }
+  }
+
   Future<void> _saveTheme() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('primaryColor', _themeData.primaryColor.value);
@@ -112,6 +141,17 @@ class ThemeProvider with ChangeNotifier {
       'color': (c['color'] as Color).value,
     }).toList());
     await prefs.setString('categories', categoriesJson);
+  }
+
+  Future<void> _saveTodoCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final categoriesJson = json.encode(_todoCategories.map((c) => {
+      'emoji': c['emoji'],
+      'label': c['label'],
+      'color': (c['color'] as Color).value,
+      'id': c['id'],
+    }).toList());
+    await prefs.setString('todoCategories', categoriesJson);
   }
 
   void removeTemporaryCategories() {
