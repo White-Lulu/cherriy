@@ -4,7 +4,8 @@ import '../providers/theme_provider.dart'; // 自定义主题状态管理
 import 'package:image_picker/image_picker.dart'; // 图片选择器
 import 'dart:io'; // 文件操作
 import '../utils/color_picker_utils.dart'; // 颜色选择器工具类
-import '../widgets/emoji_dialog.dart'; // 自定义表情对话框
+import '../widgets/category_dialog.dart'; // 分类对话框组件
+import '../widgets/emoji_dialog.dart';  // 导入EmojiDialog组件
 
 // 主题设置页面的有状态Widget
 class ThemeSettingsPage extends StatefulWidget {
@@ -134,7 +135,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _saveTheme, // 点击时保存主题
-        backgroundColor: primaryColor, // 使用主题色作为按钮背景色
+        backgroundColor: primaryColor, // 使用主题色作为按钮背���色
         child: Icon(Icons.save, color: themeTextColor), // 保存图标，使用主题文本色
       ),
     );
@@ -344,93 +345,37 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
+  // 添加分类
+  void _addCategory(bool isTodoCategory) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) => CategoryDialog(
+        title: isTodoCategory ? '添加待办分类' : '添加记账分类',
+      ),
+    );
+
+    if (result != null) {
+      if (isTodoCategory) {
+        final newCategories = [...themeProvider.todoCategories, result];
+        themeProvider.setTodoCategories(newCategories);
+      } else {
+        final newCategories = [...themeProvider.categories, result];
+        themeProvider.setCategories(newCategories);
+      }
+    }
+  }
+
+  // 编辑分类
   void _editCategory(Map<String, dynamic> category) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (BuildContext context) {
-        String emoji = category['emoji'];
-        String label = category['label'];
-        Color color = category['color'];
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text('编辑类别'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    decoration: InputDecoration(labelText: 'Emoji'),
-                    onChanged: (value) => emoji = value,
-                    controller: TextEditingController(text: emoji),
-                  ),
-                  TextField(
-                    decoration: InputDecoration(labelText: '标签'),
-                    onChanged: (value) => label = value,
-                    controller: TextEditingController(text: label),
-                  ),
-                  SizedBox(height: 10),
-                  Container(
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    child: GestureDetector(
-                      onTap: () async {
-                        final Color? newColor =
-                            await ColorPickerUtils.showColorPicker(
-                          context,
-                          color,
-                          onColorChanged: (Color newColor) {
-                            setDialogState(() {
-                              color = newColor;
-                            });
-                          },
-                        );
-                        if (newColor != null) {
-                          setDialogState(() {
-                            color = newColor;
-                          });
-                        }
-                      },
-                      child: Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: color, // 现在应该可以看到颜色变化了
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color.fromARGB(255, 214, 214, 214),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Text(
-                          '选择颜色',
-                          style: TextStyle(
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  child: Text('取消'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                TextButton(
-                  child: Text('保存'),
-                  onPressed: () {
-                    Navigator.of(context).pop({
-                      'emoji': emoji,
-                      'label': label,
-                      'color': color,
-                    });
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (BuildContext context) => CategoryDialog(
+        title: '编辑类别',
+        initialEmoji: category['emoji'],
+        initialLabel: category['label'],
+        initialColor: category['color'],
+        isEditing: true,
+      ),
     );
 
     if (result != null) {
@@ -533,154 +478,6 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
-  void _addCategory(bool isTodoCategory) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (BuildContext context) {
-        String emoji = '📝';
-        String label = '';
-        Color colorrr = themeProvider.themeData.primaryColor;
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(isTodoCategory ? '添加待办分类' : '添加记账分类'),
-              titlePadding: EdgeInsets.only(
-                  left: 24, top: 24, right: 24, bottom: 0), // 调整标题padding
-              contentPadding: EdgeInsets.only(
-                  left: 24, top: 6, right: 24, bottom: 20), // 调整内容padding
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Emoji',
-                      labelStyle: TextStyle(
-                        color: const Color.fromARGB(255, 100, 100, 100),
-                      ),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color: const Color.fromARGB(255, 214, 214, 214),
-                          width: 1.5,
-                        ),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color:
-                              Theme.of(context).textTheme.bodyMedium?.color ??
-                                  Colors.black,
-                          width: 2.0,
-                        ),
-                      ),
-                    ),
-                    cursorColor: const Color.fromARGB(255, 214, 214, 214),
-                    onChanged: (value) => emoji = value,
-                  ),
-                  SizedBox(height: 7),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: '标签',
-                      labelStyle: TextStyle(
-                        color: const Color.fromARGB(255, 100, 100, 100),
-                      ),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color: const Color.fromARGB(255, 214, 214, 214),
-                          width: 1.5,
-                        ),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color:
-                              Theme.of(context).textTheme.bodyMedium?.color ??
-                                  Colors.black,
-                          width: 2.0,
-                        ),
-                      ),
-                    ),
-                    cursorColor: const Color.fromARGB(255, 214, 214, 214),
-                    onChanged: (value) => label = value,
-                  ),
-                  SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          final Color? newColor =
-                              await ColorPickerUtils.showColorPicker(
-                            context,
-                            colorrr,
-                            onColorChanged: (Color color) {
-                              setDialogState(() {
-                                colorrr = color;
-                              });
-                            },
-                          );
-                          if (newColor != null) {
-                            setDialogState(() {
-                              colorrr = newColor;
-                            });
-                          }
-                        },
-                        child: Container(
-                          width: 80,
-                          height: 35,
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: colorrr,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Center(
-                              child: Text(
-                            '选择颜色',
-                            style: TextStyle(color: Colors.black, fontSize: 15),
-                          )),
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      TextButton(
-                        child: Text(
-                          '取消',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      TextButton(
-                        child: Text(
-                          '添加',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop({
-                            'emoji': emoji,
-                            'label': label,
-                            'color': colorrr,
-                            'id': DateTime.now().toString(),
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    if (result != null) {
-      if (isTodoCategory) {
-        final newCategories = [...themeProvider.todoCategories, result];
-        themeProvider.setTodoCategories(newCategories);
-      } else {
-        final newCategories = [...themeProvider.categories, result];
-        themeProvider.setCategories(newCategories);
-      }
-    }
-  }
-
   Widget _buildEmojiActions() {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -740,23 +537,6 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     }
   }
 
-  void _editEmoji(Map<String, dynamic> emoji) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (BuildContext context) => EmojiDialog(
-        initialEmoji: emoji['emoji'],
-        title: '编辑表情',
-      ),
-    );
-
-    if (result != null) {
-      final index = themeProvider.diaryEmojis.indexOf(emoji);
-      final newEmojis = [...themeProvider.diaryEmojis];
-      newEmojis[index] = result;
-      themeProvider.setDiaryEmojis(newEmojis);
-    }
-  }
-
   Widget _buildEmojiList(List<Map<String, dynamic>> emojis) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -796,6 +576,23 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       ),
       ),
     );
+  }
+
+  void _editEmoji(Map<String, dynamic> emoji) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) => EmojiDialog(
+        initialEmoji: emoji['emoji'],
+        title: '编辑表情',
+      ),
+    );
+
+    if (result != null) {
+      final index = themeProvider.diaryEmojis.indexOf(emoji);
+      final newEmojis = [...themeProvider.diaryEmojis];
+      newEmojis[index] = result;
+      themeProvider.setDiaryEmojis(newEmojis);
+    }
   }
 
   void _deleteEmoji(Map<String, dynamic> emoji) {
