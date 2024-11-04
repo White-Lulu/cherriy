@@ -4,6 +4,7 @@ import '../providers/theme_provider.dart'; // 自定义主题状态管理
 import 'package:image_picker/image_picker.dart'; // 图片选择器
 import 'dart:io'; // 文件操作
 import '../utils/color_picker_utils.dart'; // 颜色选择器工具类
+import '../widgets/emoji_dialog.dart'; // 自定义表情对话框
 
 // 主题设置页面的有状态Widget
 class ThemeSettingsPage extends StatefulWidget {
@@ -730,72 +731,28 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   void _addEmoji() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (BuildContext context) {
-        String emoji = '😊';
-        return AlertDialog(
-          title: Text('添加新表情'),
-          titlePadding: EdgeInsets.only(
-              left: 24, top: 24, right: 24, bottom: 0), // 调整标题padding
-          contentPadding: EdgeInsets.only(
-              left: 24, top: 6, right: 24, bottom: 14), // 调整内容padding
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Emoji',
-                  labelStyle: TextStyle(
-                    color: const Color.fromARGB(255, 100, 100, 100),
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: const Color.fromARGB(255, 214, 214, 214),
-                      width: 1.5,
-                    ),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Theme.of(context).textTheme.bodyMedium?.color ??
-                          Colors.black,
-                      width: 2.0,
-                    ),
-                  ),
-                ),
-                cursorColor: const Color.fromARGB(255, 214, 214, 214),
-                onChanged: (value) => emoji = value,
-              ),
-              SizedBox(height: 5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    child: Text(
-                      '取消',
-                      style: TextStyle(color: Colors.black,fontSize: 15),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  TextButton(
-                    child: Text(
-                      '添加',
-                      style: TextStyle(color: Colors.black,fontSize: 15),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).pop({
-                        'emoji': emoji,
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (BuildContext context) => EmojiDialog(),
     );
 
     if (result != null) {
       final newEmojis = [...themeProvider.diaryEmojis, result];
+      themeProvider.setDiaryEmojis(newEmojis);
+    }
+  }
+
+  void _editEmoji(Map<String, dynamic> emoji) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext context) => EmojiDialog(
+        initialEmoji: emoji['emoji'],
+        title: '编辑表情',
+      ),
+    );
+
+    if (result != null) {
+      final index = themeProvider.diaryEmojis.indexOf(emoji);
+      final newEmojis = [...themeProvider.diaryEmojis];
+      newEmojis[index] = result;
       themeProvider.setDiaryEmojis(newEmojis);
     }
   }
@@ -839,44 +796,6 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       ),
       ),
     );
-  }
-
-  void _editEmoji(Map<String, dynamic> emoji) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (BuildContext context) {
-        String newEmoji = emoji['emoji'];
-        return AlertDialog(
-          title: Text('编辑表情'),
-          content: TextField(
-            decoration: InputDecoration(labelText: 'Emoji'),
-            controller: TextEditingController(text: newEmoji),
-            onChanged: (value) => newEmoji = value,
-          ),
-          actions: [
-            TextButton(
-              child: Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: Text('保存'),
-              onPressed: () {
-                Navigator.of(context).pop({
-                  'emoji': newEmoji,
-                });
-              },
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result != null) {
-      final index = themeProvider.diaryEmojis.indexOf(emoji);
-      final newEmojis = [...themeProvider.diaryEmojis];
-      newEmojis[index] = result;
-      themeProvider.setDiaryEmojis(newEmojis);
-    }
   }
 
   void _deleteEmoji(Map<String, dynamic> emoji) {
