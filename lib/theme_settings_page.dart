@@ -310,9 +310,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               child: Chip(
                 avatar: Text(category['emoji']),
                 label: Text(category['label']),
-                backgroundColor: (category['color'] as Color).withOpacity(0.2),
+                backgroundColor: (category['color'] as Color).withOpacity(0.9),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(7),
                   side: BorderSide(
                     color: _deleteModes[type]!
                         ? WarmColorScorer.getTotalScore(
@@ -333,7 +333,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                                             .color!)
                                 ? Theme.of(context).textTheme.bodyMedium!.color!
                                 : Theme.of(context).primaryColor
-                            : Theme.of(context).cardColor,
+                            : Theme.of(context).scaffoldBackgroundColor,
                     width: 1,
                   ),
                 ),
@@ -485,7 +485,14 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         IconButton(
           icon: Icon(
             Icons.edit,
-            color: _editModes['diary']! ? Theme.of(context).primaryColor : null,
+            color: _editModes['diary']!
+                ? WarmColorScorer.getTotalScore(
+                            Theme.of(context).primaryColor) >
+                        WarmColorScorer.getTotalScore(
+                            Theme.of(context).textTheme.bodyMedium!.color!)
+                    ? Theme.of(context).textTheme.bodyMedium!.color!
+                    : Theme.of(context).primaryColor
+                : null,
           ),
           onPressed: () {
             setState(() {
@@ -503,7 +510,14 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         IconButton(
           icon: Icon(
             Icons.delete,
-            color: _deleteModes['diary']! ? Colors.red : null,
+            color: _deleteModes['diary']!
+                ? WarmColorScorer.getTotalScore(
+                            Theme.of(context).primaryColor) >
+                        WarmColorScorer.getTotalScore(
+                            Theme.of(context).textTheme.bodyMedium!.color!)
+                    ? Theme.of(context).primaryColor
+                    : Theme.of(context).textTheme.bodyMedium!.color!
+                : null,
           ),
           onPressed: () {
             setState(() {
@@ -539,11 +553,13 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   Widget _buildEmojiList(List<Map<String, dynamic>> emojis) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Center(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Align(
+        alignment: Alignment.center,
         child: Wrap(
+          alignment: WrapAlignment.center,
           spacing: 8,
-        runSpacing: 8,
+          runSpacing: 8,
         children: emojis.map((emoji) {
           return GestureDetector(
             onTap: () {
@@ -554,22 +570,41 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               }
             },
             child: Container(
+              width: 45,
+              height: 45,
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _editModes['diary']!
-                      ? Theme.of(context).primaryColor
-                      : _deleteModes['diary']!
-                          ? Colors.red
-                          : Colors.transparent,
+                  color: _deleteModes['diary']!
+                        ? WarmColorScorer.getTotalScore(
+                                    Theme.of(context).primaryColor) >
+                                WarmColorScorer.getTotalScore(Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .color!)
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).textTheme.bodyMedium!.color!
+                        : _editModes['diary']!
+                            ? WarmColorScorer.getTotalScore(
+                                        Theme.of(context).primaryColor) >
+                                    WarmColorScorer.getTotalScore(
+                                        Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .color!)
+                                ? Theme.of(context).textTheme.bodyMedium!.color!
+                                : Theme.of(context).primaryColor
+                            : Theme.of(context).scaffoldBackgroundColor,
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(13),
+              ),  
+              child: Center(
+                child: Text(
+                  emoji['emoji'],
+                  style: TextStyle(fontSize: 24),
               ),
-              child: Text(
-                emoji['emoji'],
-                style: TextStyle(fontSize: 24),
-              ),
+            ),
             ),
           );
         }).toList(),
