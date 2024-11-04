@@ -20,8 +20,20 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
   String? backgroundImage; // 添加这一行
   late List<Map<String, dynamic>> categories;
   late ThemeProvider themeProvider;
-  bool _isEditMode = false;
-  bool _isDeleteMode = false;
+  //bool _isEditMode = false;
+  //bool _isDeleteMode = false;
+
+  Map<String, bool> _editModes = {
+    'expense': false,
+    'todo': false,
+    'diary': false,
+  };
+
+  Map<String, bool> _deleteModes = {
+    'expense': false,
+    'todo': false,
+    'diary': false,
+  };
 
   @override
   void initState() {
@@ -83,16 +95,16 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               Divider(),
               ListTile(
                 title: Text('记账标签'),
-                trailing: _buildCategoryActions(),
+                trailing: _buildCategoryActions('expense'),
               ),
-              _buildCategoryList(themeProvider.categories),
+              _buildCategoryList(themeProvider.categories, 'expense'),
               
               Divider(),
               ListTile(
                 title: Text('待办事项标签'),
-                trailing: _buildTodoCategoryActions(),
+                trailing: _buildCategoryActions('todo'),
               ),
-              _buildCategoryList(themeProvider.todoCategories),
+              _buildCategoryList(themeProvider.todoCategories, 'todo'),
               
               Divider(),
               ListTile(
@@ -247,7 +259,7 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('主题已保存')));
   }
 
-  Widget _buildCategoryList(List<Map<String, dynamic>> categories) {
+  Widget _buildCategoryList(List<Map<String, dynamic>> categories, String type) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -259,9 +271,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           children: categories.map((category) {
             return GestureDetector(
               onTap: () {
-                if (_isEditMode) {
+                if (_editModes[type]!) {
                   _editCategory(category);
-                } else if (_isDeleteMode) {
+                } else if (_deleteModes[type]!) {
                   _deleteCategory(category);
                 }
               },
@@ -272,7 +284,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
-                    color: _isDeleteMode ? Colors.red : Theme.of(context).cardColor,
+                    color: _editModes[type]! 
+                        ? Theme.of(context).primaryColor 
+                        : _deleteModes[type]! 
+                            ? Colors.red 
+                            : Theme.of(context).cardColor,
                     width: 1,
                   ),
                 ),
@@ -460,61 +476,48 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
     );
   }
 
-  Widget _buildCategoryActions() {
+  Widget _buildCategoryActions(String type) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          icon: Icon(Icons.edit),
+          icon: Icon(
+            Icons.edit,
+            color: _editModes[type]! ? Theme.of(context).primaryColor : null,
+          ),
           onPressed: () {
             setState(() {
-              _isEditMode = !_isEditMode;
-              _isDeleteMode = false;
+              if (_editModes[type]!) {
+                _editModes.forEach((key, value) => _editModes[key] = false);
+                _deleteModes.forEach((key, value) => _deleteModes[key] = false);
+              } else {
+                _editModes.forEach((key, value) => _editModes[key] = false);
+                _deleteModes.forEach((key, value) => _deleteModes[key] = false);
+                _editModes[type] = true;
+              }
             });
           },
         ),
         IconButton(
-          icon: Icon(Icons.delete),
+          icon: Icon(
+            Icons.delete,
+            color: _deleteModes[type]! ? Colors.red : null,
+          ),
           onPressed: () {
             setState(() {
-              _isDeleteMode = !_isDeleteMode;
-              _isEditMode = false;
+              _editModes.forEach((key, value) => _editModes[key] = false);
+              _deleteModes[type] = !_deleteModes[type]!;
+              _deleteModes.forEach((key, value) {
+                if (key != type) {
+                  _deleteModes[key] = false;
+                }
+              });
             });
           },
         ),
         IconButton(
           icon: Icon(Icons.add),
-          onPressed: () => _addCategory(false),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTodoCategoryActions() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: Icon(Icons.edit),
-          onPressed: () {
-            setState(() {
-              _isEditMode = !_isEditMode;
-              _isDeleteMode = false;
-            });
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.delete),
-          onPressed: () {
-            setState(() {
-              _isDeleteMode = !_isDeleteMode;
-              _isEditMode = false;
-            });
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.add),
-          onPressed: () => _addCategory(true),
+          onPressed: () => _addCategory(type == 'todo'),
         ),
       ],
     );
@@ -588,20 +591,37 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          icon: Icon(Icons.edit),
+          icon: Icon(
+            Icons.edit,
+            color: _editModes['diary']! ? Theme.of(context).primaryColor : null,
+          ),
           onPressed: () {
             setState(() {
-              _isEditMode = !_isEditMode;
-              _isDeleteMode = false;
+              if (_editModes['diary']!) {
+                _editModes.forEach((key, value) => _editModes[key] = false);
+                _deleteModes.forEach((key, value) => _deleteModes[key] = false);
+              } else {
+                _editModes.forEach((key, value) => _editModes[key] = false);
+                _deleteModes.forEach((key, value) => _deleteModes[key] = false);
+                _editModes['diary'] = true;
+              }
             });
           },
         ),
         IconButton(
-          icon: Icon(Icons.delete),
+          icon: Icon(
+            Icons.delete,
+            color: _deleteModes['diary']! ? Colors.red : null,
+          ),
           onPressed: () {
             setState(() {
-              _isDeleteMode = !_isDeleteMode;
-              _isEditMode = false;
+              _editModes.forEach((key, value) => _editModes[key] = false);
+              _deleteModes['diary'] = !_deleteModes['diary']!;
+              _deleteModes.forEach((key, value) {
+                if (key != 'diary') {
+                  _deleteModes[key] = false;
+                }
+              });
             });
           },
         ),
@@ -657,9 +677,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
         children: emojis.map((emoji) {
           return GestureDetector(
             onTap: () {
-              if (_isEditMode) {
+              if (_editModes['diary']!) {
                 _editEmoji(emoji);
-              } else if (_isDeleteMode) {
+              } else if (_deleteModes['diary']!) {
                 _deleteEmoji(emoji);
               }
             },
@@ -667,7 +687,11 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _isDeleteMode ? Colors.red : Colors.transparent,
+                  color: _editModes['diary']! 
+                      ? Theme.of(context).primaryColor 
+                      : _deleteModes['diary']! 
+                          ? Colors.red 
+                          : Colors.transparent,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
