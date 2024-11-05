@@ -285,7 +285,8 @@ class AccountingPageState extends State<AccountingPage> {
   // 添加筛选方法
   void _showFilterBottomSheet() {
     final themeColor = Theme.of(context).primaryColor;
-    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final textColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
     final coldColor = ColorScorer.getColdColor(themeColor, textColor);
     FocusScope.of(context).unfocus();
@@ -308,7 +309,8 @@ class AccountingPageState extends State<AccountingPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('筛选', style: Theme.of(context).textTheme.titleLarge),
+                      Text('筛选', style: TextStyle(color: textColor,fontSize: 20)),
+                      Spacer(),
                       TextButton(
                         onPressed: () {
                           setState(() {
@@ -318,64 +320,115 @@ class AccountingPageState extends State<AccountingPage> {
                           Navigator.pop(context);
                           _applyFilter();
                         },
-                        
                         style: TextButton.styleFrom(
                           foregroundColor: themeColor,
                         ),
-                        child: Text('清除筛选'),
+                        child: Text('清除',
+                            style: TextStyle(color: textColor, fontSize: 14)),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _applyFilter();
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: textColor,
+                        ),
+                        child: Text('应用',
+                            style: TextStyle(color: textColor,fontSize: 14),
+                      ),
                       ),
                     ],
                   ),
                   Divider(color: Colors.grey.withOpacity(0.8), thickness: 1),
-                  Text('收支类型', style: Theme.of(context).textTheme.titleMedium),
+                  Text('收支', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 8),
                   Row(
                     children: [
                       FilterChip(
-                        label: Text('收入'),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('收入', style: TextStyle(fontSize: 12)),
+                            if (selectedTransactionType == '收入') ...[
+                              SizedBox(width: 4),
+                              Icon(Icons.check, size: 12),
+                            ],
+                          ],
+                        ),
                         selected: selectedTransactionType == '收入',
                         onSelected: (bool selected) {
                           setState(() {
                             selectedTransactionType = selected ? '收入' : null;
                           });
                         },
-                        backgroundColor: warmColor.withOpacity(0.1),
-                        selectedColor: warmColor.withOpacity(0.2),
-                        checkmarkColor: warmColor,
+                        backgroundColor: warmColor.withOpacity(0.7),
+                        selectedColor: warmColor.withOpacity(0.8),
                         labelStyle: TextStyle(
-                          color: selectedTransactionType == '收入' ? warmColor : textColor,
+                          color: const Color.fromARGB(153, 3, 0, 0),
+                          fontSize: 12,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.transparent),
+                        ),
+                        showCheckmark: false,
                       ),
                       SizedBox(width: 8),
                       FilterChip(
-                        label: Text('支出'),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('支出', style: TextStyle(fontSize: 12)),
+                            if (selectedTransactionType == '支出') ...[
+                              SizedBox(width: 4),
+                              Icon(Icons.check, size: 12),
+                            ],
+                          ],
+                        ),
                         selected: selectedTransactionType == '支出',
                         onSelected: (bool selected) {
                           setState(() {
                             selectedTransactionType = selected ? '支出' : null;
                           });
                         },
-                        backgroundColor: coldColor.withOpacity(0.8),
-                        selectedColor: coldColor.withOpacity(0.9),
-                        checkmarkColor: coldColor,
+                        backgroundColor: coldColor.withOpacity(0.7),
+                        selectedColor: coldColor.withOpacity(0.8),
                         labelStyle: TextStyle(
-                          color: selectedTransactionType == '支出' ? coldColor : textColor, // 比这个颜色深一些
+                          color: const Color.fromARGB(153, 3, 0, 0),
+                          fontSize: 12,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.transparent),
+                        ),
+                        showCheckmark: false,
                       ),
                     ],
                   ),
                   Divider(color: Colors.grey.withOpacity(0.8), thickness: 1),
-                  Text('类别', style: Theme.of(context).textTheme.titleMedium),
+                  Text('标签', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: categories.map((category) {
-                      String categoryString = '${category['emoji']} ${category['label']}';
-                      bool isSelected = selectedFilterCategories.contains(categoryString);
+                      String categoryString =
+                          '${category['emoji']}${category['label']}';
                       return FilterChip(
-                        label: Text(categoryString),
-                        selected: isSelected,
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(categoryString),
+                            if (selectedFilterCategories
+                                .contains(categoryString)) ...[
+                              SizedBox(width: 4),
+                              Icon(Icons.check, size: 12),
+                            ],
+                          ],
+                        ),
+                        selected:
+                            selectedFilterCategories.contains(categoryString),
                         onSelected: (bool selected) {
                           setState(() {
                             if (selected) {
@@ -387,30 +440,19 @@ class AccountingPageState extends State<AccountingPage> {
                         },
                         backgroundColor: category['color'].withOpacity(0.7),
                         selectedColor: category['color'].withOpacity(0.8),
-                        checkmarkColor: category['color'],
                         labelStyle: TextStyle(
-                          color: isSelected ? category['color'] : textColor,
+                          color: const Color.fromARGB(153, 3, 0, 0),
                           fontSize: 12,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.transparent),
+                        ),
+                        showCheckmark: false,
                       );
                     }).toList(),
                   ),
                   SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _applyFilter();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: themeColor,
-                      foregroundColor: textColor,
-                      minimumSize: Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text('应用筛选'),
-                  ),
                 ],
               ),
             );
@@ -632,7 +674,7 @@ class AccountingPageState extends State<AccountingPage> {
       }
 
       // 分割现有数据和预测数据（今天的索引是3）
-      _expenseSpotsReal = _expenseSpots.sublist(0, 4); // 0到今天
+      _expenseSpotsReal = _expenseSpots.sublist(0, 4); // 0到今
       _expenseSpotsFuture = _expenseSpots.sublist(3); // 今天到明天
       _incomeSpotsReal = _incomeSpots.sublist(0, 4);
       _incomeSpotsFuture = _incomeSpots.sublist(3);
@@ -655,7 +697,7 @@ class AccountingPageState extends State<AccountingPage> {
       children: [
         Row(
           children: [
-            Text('  收入 :',
+            Text('  净收入 :',
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -768,7 +810,7 @@ class AccountingPageState extends State<AccountingPage> {
                         interval: math.max((_maxY - _minY) / 5, 0.1),
                         getTitlesWidget: (value, meta) {
                           // 如果是最小值，则不显示
-                          if (value == _minY) {
+                          if (value == _minY || value == _maxY) {
                             return const SizedBox.shrink();
                           }
                           return Text(
@@ -797,7 +839,8 @@ class AccountingPageState extends State<AccountingPage> {
                           String dateText = '${date.month}/${date.day}';
 
                           return Padding(
-                            padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+                            padding: const EdgeInsets.only(
+                                left: 10, right: 10, top: 10, bottom: 10),
                             child: Text(
                               dateText, // 给text加上边界
                               overflow: TextOverflow.ellipsis,
@@ -864,20 +907,20 @@ class AccountingPageState extends State<AccountingPage> {
                     show: true,
                     border: Border(
                       left: BorderSide(
-                        color: Colors.grey.withOpacity(0.5),  // 左边框颜色
-                        width: 1.5,  // 左边框宽度
+                        color: Colors.grey.withOpacity(0.5), // 左边框颜色
+                        width: 1.5, // 左边框宽度
                       ),
                       bottom: BorderSide(
-                        color: Colors.grey.withOpacity(0.5),  // 下边框颜色
-                        width: 1.5,  // 下边框宽度
+                        color: Colors.grey.withOpacity(0.5), // 下边框颜色
+                        width: 1.5, // 下边框宽度
                       ),
                       top: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),  // 上边框颜色（更淡）
-                        width: 1,  // 上边框宽度（更细）
+                        color: Colors.grey.withOpacity(0.2), // 上边框颜色（更淡）
+                        width: 1, // 上边框宽度（更细）
                       ),
                       right: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),  // 右边框颜色（更淡）
-                        width: 1,  // 右边框宽度（更细）
+                        color: Colors.grey.withOpacity(0.2), // 右边框颜色（更淡）
+                        width: 1, // 右边框宽度（更细）
                       ),
                     ),
                   ),
@@ -1012,18 +1055,15 @@ class AccountingPageState extends State<AccountingPage> {
                                   });
                                 },
                                 backgroundColor: category['color']
-                                    .withOpacity(0.1), // 减小不选中时的透明度
+                                    .withOpacity(0.8), // 减小不选中时的透明度
                                 selectedColor: category['color']
-                                    .withOpacity(0.3), // 减小选中时的透明度
+                                    .withOpacity(1.0), // 减小选中时的透明度
                                 shape: RoundedRectangleBorder(
                                   borderRadius:
                                       BorderRadius.circular(8), // 减小圆角
-                                  side: BorderSide(
-                                    color: Theme.of(context)
-                                        .cardColor, // 设置边框颜色与卡片颜色相同
-                                    width: 0, // 设置边框宽度
-                                  ),
+                                  side: BorderSide(color: Colors.transparent),
                                 ),
+
                                 showCheckmark: false,
                               ),
                             );
@@ -1240,7 +1280,7 @@ class AccountingPageState extends State<AccountingPage> {
         orElse: () {
           // 如果是临时类别，直接使用categoryString作为显示文本
           return {
-            'emoji': '', // 移🏷
+            'emoji': '', // 移除emoji
             'label': categoryString,
             'color': themeColor, // 使用主题色作为默认颜色
             'isTemporary': true
@@ -1251,14 +1291,18 @@ class AccountingPageState extends State<AccountingPage> {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
-          color: (category['color'] as Color).withOpacity(0.2),
+          color: (category['color'] as Color).withOpacity(0.8),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           category['isTemporary'] == true
               ? categoryString // 临时类别直接显示完整文本
               : '${category['emoji']} ${category['label']}', // 永久类别显示emoji和标签
-          style: TextStyle(fontSize: 10),
+          style: TextStyle(
+            fontSize: 10,
+            color:
+                displayRecords[index]['type'] == '收入' ? warmColor : coldColor,
+          ),
         ),
       );
     }
@@ -1301,10 +1345,6 @@ class AccountingPageState extends State<AccountingPage> {
                   SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.category,
-                          size: 16,
-                          color: const Color.fromARGB(255, 214, 214, 214)),
-                      SizedBox(width: 4),
                       Expanded(
                         child: Wrap(
                           spacing: 4,
