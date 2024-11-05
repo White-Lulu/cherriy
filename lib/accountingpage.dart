@@ -59,7 +59,7 @@ class AccountingPageState extends State<AccountingPage> {
 
   // 添加一个新的状态变量用于存储筛选后的记录
   List<Map<String, String>> filteredRecords = [];
-  bool isFiltered = false; 
+  bool isFiltered = false;
 
   // 添加处理图表数据的变量
   List<FlSpot> _expenseSpots = [];
@@ -81,7 +81,7 @@ class AccountingPageState extends State<AccountingPage> {
   Future<void> _loadViewMode() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _viewMode = prefs.getInt('accountingViewMode') ?? 0;  // 默认为列表视图
+      _viewMode = prefs.getInt('accountingViewMode') ?? 0; // 默认为列表视图
     });
   }
 
@@ -104,8 +104,8 @@ class AccountingPageState extends State<AccountingPage> {
     super.initState();
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     themeProvider.addListener(_onCategoriesChanged);
-    _loadViewMode();  // 加载保存的视图模式
-    _loadChartExpandedState();  // 加载图表折叠状态
+    _loadViewMode(); // 加载保存的视图模式
+    _loadChartExpandedState(); // 加载图表折叠状态
     _loadRecords().then((_) {
       if (mounted) {
         _updateChartData();
@@ -142,7 +142,7 @@ class AccountingPageState extends State<AccountingPage> {
                 .toList()
             : [];
         //_isLoading = false;
-        _updateChartData();  // 在这里也调用更新图表
+        _updateChartData(); // 在这里也调用更新图表
       });
     } catch (e) {
       print('加载记录时出错: $e');
@@ -168,18 +168,18 @@ class AccountingPageState extends State<AccountingPage> {
           'type': _transactionType,
           'timestamp': DateTime.now().toIso8601String(),
         });
-        
+
         // 清除输入
         _amountController.clear();
         _noteController.clear();
-        
+
         // 清除选中的类别
-        selectedCategories.clear();  // 添加这行，清除已选中的类别
-        
+        selectedCategories.clear(); // 添加这行，清除已选中的类别
+
         // 移除临时类别
         categories.removeWhere((category) => category['isTemporary'] == true);
       });
-      
+
       _saveRecords();
       // 更新 ThemeProvider 中的类别列表
       themeProvider.setCategories(categories);
@@ -224,7 +224,7 @@ class AccountingPageState extends State<AccountingPage> {
   void _toggleViewMode() {
     setState(() {
       _viewMode = (_viewMode + 1) % 3;
-      _saveViewMode();  // 保存新的视图模式
+      _saveViewMode(); // 保存新的视图模式
     });
   }
 
@@ -239,7 +239,7 @@ class AccountingPageState extends State<AccountingPage> {
   }
 
   // 添加筛选方法
-  void _showFilterBottomSheet() {  
+  void _showFilterBottomSheet() {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
@@ -396,14 +396,15 @@ class AccountingPageState extends State<AccountingPage> {
           List<String> recordCategories = [];
           try {
             recordCategories =
-                (jsonDecode(record['categories'] ?? '[]') as List).cast<String>();
+                (jsonDecode(record['categories'] ?? '[]') as List)
+                    .cast<String>();
           } catch (e) {
             print('Error decoding categories: $e');
           }
 
           bool matchesCategories = selectedFilterCategories.isEmpty ||
-              selectedFilterCategories
-                  .any((filterCategory) => recordCategories.contains(filterCategory));
+              selectedFilterCategories.any((filterCategory) =>
+                  recordCategories.contains(filterCategory));
 
           return matchesType && matchesCategories;
         }).toList();
@@ -414,8 +415,9 @@ class AccountingPageState extends State<AccountingPage> {
   // 修改排序记录的方法
   void _sortRecords() {
     // 确定要排序的列表
-    List<Map<String, String>> listToSort = isFiltered ? filteredRecords : records;
-    
+    List<Map<String, String>> listToSort =
+        isFiltered ? filteredRecords : records;
+
     listToSort.sort((a, b) {
       if (_sortType == 'amount') {
         double amountA = double.parse(a['amount'] ?? '0');
@@ -440,7 +442,7 @@ class AccountingPageState extends State<AccountingPage> {
         filteredRecords = List.from(listToSort);
       } else {
         records = List.from(listToSort);
-        _saveRecords();  // 只有在排序原始记录时才保存
+        _saveRecords(); // 只有在排序原始记录时才保存
       }
     });
   }
@@ -475,23 +477,33 @@ class AccountingPageState extends State<AccountingPage> {
   void _updateChartData() {
     if (records.isEmpty) return;
 
-    // 按日期分组的数据
     Map<DateTime, double> expenseByDate = {};
     Map<DateTime, double> incomeByDate = {};
     Map<DateTime, double> netIncomeByDate = {};
 
     // 获取最早和最新日期
-    DateTime earliestDate = DateTime.now();
-    DateTime latestDate = DateTime.now();
+    List<DateTime> dates = records.map((record) {
+      return DateTime.parse(record['timestamp'] ?? '').toLocal();
+    }).toList();
 
-    // 处理每条记录
+    dates.sort();
+    DateTime earliestDate = dates.first;
+    DateTime latestDate = dates.last;
+
+    // 初始化所有日期的数据为0
+    for (DateTime date = earliestDate;
+        date.isBefore(latestDate.add(Duration(days: 1)));
+        date = date.add(Duration(days: 1))) {
+      expenseByDate[date] = 0;
+      incomeByDate[date] = 0;
+      netIncomeByDate[date] = 0;
+    }
+
+    // 累加每天的数据
     for (var record in records) {
       DateTime date = DateTime.parse(record['timestamp'] ?? '').toLocal();
       date = DateTime(date.year, date.month, date.day);
       double amount = double.parse(record['amount'] ?? '0');
-
-      earliestDate = date.isBefore(earliestDate) ? date : earliestDate;
-      latestDate = date.isAfter(latestDate) ? date : latestDate;
 
       if (record['type'] == '支出') {
         expenseByDate[date] = (expenseByDate[date] ?? 0) + amount;
@@ -502,11 +514,11 @@ class AccountingPageState extends State<AccountingPage> {
       }
     }
 
-    // 确保每一天都有数据点
+    // 转换为图表数据点
     _expenseSpots = [];
     _incomeSpots = [];
     _netIncomeSpots = [];
-    
+
     int i = 0;
     for (DateTime date = earliestDate;
         date.isBefore(latestDate.add(Duration(days: 1)));
@@ -517,7 +529,7 @@ class AccountingPageState extends State<AccountingPage> {
       i++;
     }
 
-    // 计算最大最小值用于图表缩放
+    // 计算最大最小值
     double maxAmount = [
       ..._expenseSpots.map((spot) => spot.y),
       ..._incomeSpots.map((spot) => spot.y),
@@ -531,8 +543,19 @@ class AccountingPageState extends State<AccountingPage> {
     ].reduce((min, value) => value < min ? value : min);
 
     setState(() {
-      _maxY = maxAmount * 1.1;
-      _minY = minAmount * 1.1;
+      // 如果最大值和最小值相等，强制设置一个范围
+      if (maxAmount == minAmount) {
+        _maxY = maxAmount + 1.0;
+        _minY = maxAmount - 1.0;
+      } else {
+        _maxY = maxAmount * 1.1;
+        _minY = minAmount * 1.1;
+        
+        // 确保最大值和最小值之间至少有 1.0 的差值
+        if (_maxY - _minY < 1.0) {
+          _maxY = _minY + 1.0;
+        }
+      }
     });
   }
 
@@ -548,75 +571,197 @@ class AccountingPageState extends State<AccountingPage> {
 
     return Column(
       children: [
-        // 添加折叠按钮
         Row(
           children: [
-            Text('  净收入 :', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color:const Color.fromARGB(255, 129, 129, 129))),
-            Text(' ${_netIncomeSpots.last.y.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: chartColor)),
+            Text('  净收入 :',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color.fromARGB(255, 129, 129, 129))),
+            Text(' ${_netIncomeSpots.last.y.toStringAsFixed(2)}',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: chartColor)),
             Spacer(),
+            // 添加图例
+            Row(
+              children: [
+                Container(
+                  margin: EdgeInsets.only(right: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 2,
+                        color: warmColor,
+                      ),
+                      SizedBox(width: 4),
+                      Text('收入', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(right: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 2,
+                        color: coldColor,
+                      ),
+                      SizedBox(width: 4),
+                      Text('支出', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(right: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 2,
+                        color: textColor,
+                      ),
+                      SizedBox(width: 4),
+                      Text('净收入', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             IconButton(
-              icon: Icon(_isChartExpanded ? Icons.expand_less : Icons.expand_more),
+              icon: Icon(
+                  _isChartExpanded ? Icons.expand_less : Icons.expand_more),
               onPressed: () {
                 setState(() {
                   _isChartExpanded = !_isChartExpanded;
-                  _saveChartExpandedState();  // 保存折叠状态
+                  _saveChartExpandedState();
                 });
               },
               tooltip: _isChartExpanded ? '收起图表' : '展开图表',
             ),
           ],
         ),
-        // 使用AnimatedContainer实现平滑的展开/收起效果
         AnimatedContainer(
           duration: Duration(milliseconds: 280),
-          height: _isChartExpanded ? 200 : 0, // 设置高度
-          child: SingleChildScrollView( // 使用SingleChildScrollView实现滚动
-            physics: NeverScrollableScrollPhysics(), // 禁用滚动
-            child: Container( // 设置容器的高度和内边距
+          height: _isChartExpanded ? 200 : 0,
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Container(
               height: 200,
               padding: EdgeInsets.all(16),
-              child: LineChart( // 使用LineChart绘制图表
+              child: LineChart(
                 LineChartData(
-                  minY: _minY, // 设置最小Y值
-                  maxY: _maxY, // 设置最大Y值
-                  gridData: FlGridData(show: true), // 显示网格
-                  titlesData: FlTitlesData( 
-                    leftTitles: AxisTitles( // 设置左侧标题
-                      sideTitles: SideTitles(showTitles: true, reservedSize: 40), // 设置左侧标题的显示和大小
+                  minY: _minY,
+                  maxY: _maxY,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    horizontalInterval: math.max((_maxY - _minY) / 10, 0.1), // 添加最小值限制
+                    verticalInterval: 1,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 0.5,
+                      );
+                    },
+                    getDrawingVerticalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 0.5,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: math.max((_maxY - _minY) / 5, 0.1), // 只显示5个刻度，且最小间隔为 0.1
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toStringAsFixed(1),
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 10,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    bottomTitles: AxisTitles( // 设置底部标题
-                      sideTitles: SideTitles(showTitles: false), // 设置底部标题的显示
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 22,
+                        interval: _expenseSpots.length > 7
+                            ? _expenseSpots.length / 7
+                            : 1, // 最多显示7个日期
+                        getTitlesWidget: (value, meta) {
+                          if (value % 1 != 0) return Text('');
+                          final index = value.toInt();
+                          if (index < 0 || index >= records.length)
+                            return Text('');
+                          final date =
+                              DateTime.parse(records[index]['timestamp'] ?? '');
+                          return Text(
+                            '${date.month}/${date.day}',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 10,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    rightTitles: AxisTitles( // 设置右侧标题
-                      sideTitles: SideTitles(showTitles: false), // 设置右侧标题的显示
-                    ),
-                    topTitles: AxisTitles( // 设置顶部标题
-                      sideTitles: SideTitles(showTitles: false), // 设置顶部标题的显示
-                    ),
+                    rightTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   lineBarsData: [
-                    // 支出线
-                    LineChartBarData( // 支出线的数据
-                      spots: _expenseSpots, // 支出线的点数据
-                      color: coldColor, // 支出线的颜色
-                      barWidth: 2, // 支出线的宽度
-                      dotData: FlDotData(show: false), // 支出点的显示
+                    LineChartBarData(
+                      spots: _expenseSpots,
+                      color: coldColor,
+                      barWidth: 2,
+                      dotData: FlDotData(show: false),
+                      isCurved: true, // 使用曲线
                     ),
-                    // 收入线
-                    LineChartBarData( // 收入线的数据
-                      spots: _incomeSpots, // 收入线的点数据
-                      color: warmColor, // 收入线的颜色
-                      barWidth: 2, // 收入线的宽度
-                      dotData: FlDotData(show: false), // 收入点的显示
+                    LineChartBarData(
+                      spots: _incomeSpots,
+                      color: warmColor,
+                      barWidth: 2,
+                      dotData: FlDotData(show: false),
+                      isCurved: true, // 使用曲线
                     ),
-                    // 净收入线
-                    LineChartBarData( // 净收入线的数据
-                      spots: _netIncomeSpots, // 净收入线的点数据
-                      color: textColor, // 净收入线的颜色
-                      barWidth: 2, // 净收入线的宽度
-                      dotData: FlDotData(show: false), // 净收入点的显示
+                    LineChartBarData(
+                      spots: _netIncomeSpots,
+                      color: textColor,
+                      barWidth: 2,
+                      dotData: FlDotData(show: false),
+                      isCurved: true, // 使用曲线
                     ),
                   ],
+                  lineTouchData: LineTouchData(
+                    enabled: true,
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                      getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          String title = spot.barIndex == 0
+                              ? '支出: '
+                              : spot.barIndex == 1
+                                  ? '收入: '
+                                  : '净收入: ';
+                          return LineTooltipItem(
+                            '$title${spot.y.toStringAsFixed(2)}',
+                            TextStyle(color: Colors.white, fontSize: 12),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -636,340 +781,335 @@ class AccountingPageState extends State<AccountingPage> {
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child//: _isLoading
+      child //: _isLoading
           //? Center(child: CircularProgressIndicator()) // 显示加载中的进度条
           : Column(
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Form(
-                      key: _formKey, // 表单的全局键，用于验证表单
-                      child: Column(
-                        children: [
-                          // 金额输入框
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    if (_amountFocusNode.hasFocus) {
-                                      _amountFocusNode.unfocus();
-                                    } else {
-                                      FocusScope.of(context)
-                                          .requestFocus(_amountFocusNode);
-                                    }
-                                  },
-                                  child: TextFormField(
-                                    controller: _amountController,
-                                    focusNode: _amountFocusNode,
-                                    decoration: InputDecoration(
-                                      labelText: '金额',
-                                      labelStyle: TextStyle(
-                                        color: const Color.fromARGB(
-                                            255, 100, 100, 100),
-                                      ),
-                                      enabledBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: const Color.fromARGB(
-                                              255, 214, 214, 214),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      focusedBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: themeColor,
-                                          width: 2.0,
-                                        ),
-                                      ),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return '请输入金额';
-                                      }
-                                      return null;
-                                    },
-                                    cursorColor: const Color.fromARGB(
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey, // 表单的全局键，用于验证表单
+                child: Column(
+                  children: [
+                    // 金额输入框
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: GestureDetector(
+                            onTap: () {
+                              if (_amountFocusNode.hasFocus) {
+                                _amountFocusNode.unfocus();
+                              } else {
+                                FocusScope.of(context)
+                                    .requestFocus(_amountFocusNode);
+                              }
+                            },
+                            child: TextFormField(
+                              controller: _amountController,
+                              focusNode: _amountFocusNode,
+                              decoration: InputDecoration(
+                                labelText: '金额',
+                                labelStyle: TextStyle(
+                                  color:
+                                      const Color.fromARGB(255, 100, 100, 100),
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: const Color.fromARGB(
                                         255, 214, 214, 214),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: themeColor,
+                                    width: 2.0,
                                   ),
                                 ),
                               ),
-                              Expanded(
-                                flex: 2,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _buildTransactionTypeCheckbox(
-                                        '收入', warmColor),
-                                    _buildTransactionTypeCheckbox(
-                                        '支出', coldColor),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          // 类别选择
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                ...categories.map((category) {
-                                  String categoryString =
-                                      '${category['emoji']}${category['label']}';
-                                  bool isSelected = selectedCategories
-                                      .contains(categoryString);
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 6.0),
-                                    child: FilterChip(
-                                      label: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            categoryString,
-                                            style: TextStyle(fontSize: 12),
-                                          ),
-                                          if (isSelected) SizedBox(width: 3),
-                                          if (isSelected)
-                                            Icon(Icons.check, size: 12),
-                                        ],
-                                      ),
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize
-                                              .shrinkWrap, // 减小点击区域
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4), // 减小内边距
-                                      selected: isSelected,
-                                      onSelected: (bool selected) {
-                                        setState(() {
-                                          if (selected) {
-                                            selectedCategories
-                                                .add(categoryString);
-                                          } else {
-                                            selectedCategories
-                                                .remove(categoryString);
-                                          }
-                                        });
-                                      },
-                                      backgroundColor: category['color']
-                                          .withOpacity(0.1), // 减小不选中时的透明度
-                                      selectedColor: category['color']
-                                          .withOpacity(0.3), // 减小选中时的透明度
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8), // 减小圆角
-                                        side: BorderSide(
-                                          color: Theme.of(context)
-                                              .cardColor, // 设置边框颜色与卡片颜色相同
-                                          width: 0, // 设置边框宽度
-                                        ),
-                                      ),
-                                      showCheckmark: false,
-                                    ),
-                                  );
-                                }),
-                                IconButton(
-                                  icon: Icon(Icons.add),
-                                  onPressed: _addCustomCategory,
-                                ),
-                              ],
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return '请输入金额';
+                                }
+                                return null;
+                              },
+                              cursorColor:
+                                  const Color.fromARGB(255, 214, 214, 214),
                             ),
                           ),
-                          SizedBox(height: 16),
-                          Row(
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              // 备注输入框
-                              Expanded(
-                                flex: 1,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    if (_noteFocusNode.hasFocus) {
-                                      _noteFocusNode.unfocus();
-                                    } else {
-                                      FocusScope.of(context)
-                                          .requestFocus(_noteFocusNode);
-                                    }
-                                  },
-                                  child: TextFormField(
-                                    controller: _noteController,
-                                    focusNode: _noteFocusNode,
-                                    decoration: InputDecoration(
-                                      labelText: '备注', // 设置labelText
-                                      labelStyle: TextStyle(
-                                        color: const Color.fromARGB(
-                                            255, 100, 100, 100),
-                                      ), // 设置labelText的颜色
-                                      enabledBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: const Color.fromARGB(
-                                              255, 214, 214, 214), // 设置横线颜色
-                                          width: 1.5, // 设置横线粗细
-                                        ),
-                                      ),
-                                      focusedBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: themeColor, // 设置获取焦点时的横线颜色
-                                          width: 2.0, // 设置获取焦点时的横线粗细
-                                        ),
-                                      ),
-                                    ),
-                                    cursorColor: const Color.fromARGB(
-                                        255, 214, 214, 214), // 设置获点时的横线颜色
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 25),
-                              Expanded(
-                                flex: 0,
-                                child:
-                                    // 添加记录按钮
-                                    ElevatedButton(
-                                  onPressed: _addRecord, // 添加记录
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: themeColor, // 设置按钮背景颜色
-                                    foregroundColor: textColor,
-                                  ),
-                                  child: Text('📝'),
-                                ),
-                              ),
-                              SizedBox(width: 5),
+                              _buildTransactionTypeCheckbox('收入', warmColor),
+                              _buildTransactionTypeCheckbox('支出', coldColor),
                             ],
                           ),
-                          SizedBox(height: 8), // 与下一个输入框的间隔
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    // 类别选择
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ...categories.map((category) {
+                            String categoryString =
+                                '${category['emoji']}${category['label']}';
+                            bool isSelected =
+                                selectedCategories.contains(categoryString);
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6.0),
+                              child: FilterChip(
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      categoryString,
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    if (isSelected) SizedBox(width: 3),
+                                    if (isSelected) Icon(Icons.check, size: 12),
+                                  ],
+                                ),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap, // 减小点击区域
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4), // 减小内边距
+                                selected: isSelected,
+                                onSelected: (bool selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      selectedCategories.add(categoryString);
+                                    } else {
+                                      selectedCategories.remove(categoryString);
+                                    }
+                                  });
+                                },
+                                backgroundColor: category['color']
+                                    .withOpacity(0.1), // 减小不选中时的透明度
+                                selectedColor: category['color']
+                                    .withOpacity(0.3), // 减小选中时的透明度
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(8), // 减小圆角
+                                  side: BorderSide(
+                                    color: Theme.of(context)
+                                        .cardColor, // 设置边框颜色与卡片颜色相同
+                                    width: 0, // 设置边框宽度
+                                  ),
+                                ),
+                                showCheckmark: false,
+                              ),
+                            );
+                          }),
+                          IconButton(
+                            icon: Icon(Icons.add),
+                            onPressed: _addCustomCategory,
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(height: 16),
-                _buildChart(),  // 添加图表
-                SizedBox(height: 16),
-                // 新增：视切换图标
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.filter_list),
-                      onPressed: _showFilterBottomSheet,
-                      tooltip: '筛选账单',
-                      color: selectedFilterCategories.isNotEmpty
-                          ? Theme.of(context).primaryColor
-                          : null,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.attach_money),
-                      onPressed: _toggleSortByAmount,
-                      tooltip: _sortType == 'amount'
-                          ? (_isAmountAscending ? '金额从低到高' : '金额从高到低')
-                          : '按金额排序',
-                      color: _sortType == 'amount'
-                          ? Theme.of(context).primaryColor
-                          : null,
-                    ),
-                    IconButton(
-                      icon: Icon(_isTimeAscending
-                          ? Icons.arrow_upward
-                          : Icons.arrow_downward),
-                      onPressed: _toggleSortByTime,
-                      tooltip: _sortType == 'time'
-                          ? (_isTimeAscending ? '从旧到新' : '从新到')
-                          : '按时间排序',
-                      color: _sortType == 'time'
-                          ? Theme.of(context).primaryColor
-                          : null,
-                    ),
-                    IconButton(
-                      icon: Icon(_viewMode == 0 
-                          ? Icons.grid_view_sharp  // 列表视图时显示2列网格图标
-                          : _viewMode == 1 
-                              ? Icons.grid_3x3     // 2列网格时显示3列网格图标
-                              : Icons.view_list),  // 3列网格时显示列表图标
-                      onPressed: _toggleViewMode,
-                      tooltip: _viewMode == 0 
-                          ? '切换到2列网格' 
-                          : _viewMode == 1 
-                              ? '切换到3列网格' 
-                              : '切换到列表视图',
-                    ),
-                    IconButton(
-                      icon: Icon(_isDeleteMode
-                          ? Icons.delete_forever
-                          : Icons.delete_outline),
-                      onPressed: () {
-                        setState(() {
-                          _isDeleteMode = !_isDeleteMode;
-                        });
-                      },
-                      tooltip: _isDeleteMode ? '退出删除模式' : '进入删除模式',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                // 账单列表
-                Expanded(
-                  child: _viewMode == 0
-                      ? ListView.builder(
-                          // 列表视图的现有代码保持不变
-                          itemCount: isFiltered ? filteredRecords.length : records.length,
-                          itemBuilder: (context, index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) => _buildRecordItem(
-                                  context, 
-                                  index, 
-                                  constraints, 
-                                  isFiltered ? filteredRecords : records),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        // 备注输入框
+                        Expanded(
+                          flex: 1,
+                          child: GestureDetector(
+                            onTap: () {
+                              if (_noteFocusNode.hasFocus) {
+                                _noteFocusNode.unfocus();
+                              } else {
+                                FocusScope.of(context)
+                                    .requestFocus(_noteFocusNode);
+                              }
+                            },
+                            child: TextFormField(
+                              controller: _noteController,
+                              focusNode: _noteFocusNode,
+                              decoration: InputDecoration(
+                                labelText: '备注', // 设置labelText
+                                labelStyle: TextStyle(
+                                  color:
+                                      const Color.fromARGB(255, 100, 100, 100),
+                                ), // 设置labelText的颜色
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: const Color.fromARGB(
+                                        255, 214, 214, 214), // 设置横线颜色
+                                    width: 1.5, // 设置横线粗细
+                                  ),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: themeColor, // 设置获取焦点时的横线颜色
+                                    width: 2.0, // 设置获取焦点时的横线粗细
+                                  ),
+                                ),
+                              ),
+                              cursorColor: const Color.fromARGB(
+                                  255, 214, 214, 214), // 设置获点时的横线颜色
                             ),
                           ),
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            return GridView.extent(
-                              maxCrossAxisExtent: _viewMode == 1 
-                                  ? constraints.maxWidth / 2  // 2列网格
-                                  : constraints.maxWidth / 3, // 3列网格
-                              childAspectRatio: _viewMode == 1 ? 2 : 1.2, // 根据模式设置比例
-                              crossAxisSpacing: 6,
-                              mainAxisSpacing: 10,
-                              padding: EdgeInsets.all(0),
-                              children: List.generate(
-                                isFiltered ? filteredRecords.length : records.length,
-                                (index) {
-                                  return LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return _buildRecordItem(
-                                          context, 
-                                          index, 
-                                          constraints, 
-                                          isFiltered ? filteredRecords : records);
-                                    },
-                                  );
-                                },
-                              ),
+                        ),
+                        SizedBox(width: 25),
+                        Expanded(
+                          flex: 0,
+                          child:
+                              // 添加记录按钮
+                              ElevatedButton(
+                            onPressed: _addRecord, // 添加记录
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: themeColor, // 设置按钮背景颜色
+                              foregroundColor: textColor,
+                            ),
+                            child: Text('📝'),
+                          ),
+                        ),
+                        SizedBox(width: 5),
+                      ],
+                    ),
+                    SizedBox(height: 8), // 下一个输入框的间隔
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 16),
+          _buildChart(), // 添加图表
+          SizedBox(height: 16),
+          // 新增：视切换图标
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: Icon(Icons.filter_list),
+                onPressed: _showFilterBottomSheet,
+                tooltip: '筛选账单',
+                color: selectedFilterCategories.isNotEmpty
+                    ? Theme.of(context).primaryColor
+                    : null,
+              ),
+              IconButton(
+                icon: Icon(Icons.attach_money),
+                onPressed: _toggleSortByAmount,
+                tooltip: _sortType == 'amount'
+                    ? (_isAmountAscending ? '金额从低到高' : '金额从高到低')
+                    : '按金额排序',
+                color: _sortType == 'amount'
+                    ? Theme.of(context).primaryColor
+                    : null,
+              ),
+              IconButton(
+                icon: Icon(_isTimeAscending
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward),
+                onPressed: _toggleSortByTime,
+                tooltip: _sortType == 'time'
+                    ? (_isTimeAscending ? '从旧到新' : '从新到')
+                    : '按时间排序',
+                color:
+                    _sortType == 'time' ? Theme.of(context).primaryColor : null,
+              ),
+              IconButton(
+                icon: Icon(_viewMode == 0
+                    ? Icons.grid_view_sharp // 列表视图时显示2网格图标
+                    : _viewMode == 1
+                        ? Icons.grid_3x3 // 2列网格时显示3列网格图标
+                        : Icons.view_list), // 3列网格时显示列表图标
+                onPressed: _toggleViewMode,
+                tooltip: _viewMode == 0
+                    ? '切换到2列网格'
+                    : _viewMode == 1
+                        ? '切换到3列网格'
+                        : '切换到列表视图',
+              ),
+              IconButton(
+                icon: Icon(_isDeleteMode
+                    ? Icons.delete_forever
+                    : Icons.delete_outline),
+                onPressed: () {
+                  setState(() {
+                    _isDeleteMode = !_isDeleteMode;
+                  });
+                },
+                tooltip: _isDeleteMode ? '退出删除模式' : '进入删除模式',
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          // 账单列表
+          Expanded(
+            child: _viewMode == 0
+                ? ListView.builder(
+                    // 列表视图的现有代码保持不变
+                    itemCount:
+                        isFiltered ? filteredRecords.length : records.length,
+                    itemBuilder: (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => _buildRecordItem(
+                            context,
+                            index,
+                            constraints,
+                            isFiltered ? filteredRecords : records),
+                      ),
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return GridView.extent(
+                        maxCrossAxisExtent: _viewMode == 1
+                            ? constraints.maxWidth / 2 // 2列网格
+                            : constraints.maxWidth / 3, // 3列网格
+                        childAspectRatio: _viewMode == 1 ? 2 : 1.2, // 根据模式设置比例
+                        crossAxisSpacing: 6,
+                        mainAxisSpacing: 10,
+                        padding: EdgeInsets.all(0),
+                        children: List.generate(
+                          isFiltered ? filteredRecords.length : records.length,
+                          (index) {
+                            return LayoutBuilder(
+                              builder: (context, constraints) {
+                                return _buildRecordItem(
+                                    context,
+                                    index,
+                                    constraints,
+                                    isFiltered ? filteredRecords : records);
+                              },
                             );
                           },
                         ),
-                ),
-              ],
-            ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
   // 新增：构建记录项的方法，用于网格和列表视图
-  Widget _buildRecordItem(
-      BuildContext context, int index, BoxConstraints constraints, List<Map<String, String>> displayRecords) {
+  Widget _buildRecordItem(BuildContext context, int index,
+      BoxConstraints constraints, List<Map<String, String>> displayRecords) {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = ColorScorer.getWarmColor(themeColor, textColor); 
+    final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
     final coldColor = ColorScorer.getColdColor(themeColor, textColor);
 
     List<String> recordCategories = [];
     try {
-      recordCategories = (jsonDecode(displayRecords[index]['categories'] ?? '[]') as List).cast<String>();
+      recordCategories =
+          (jsonDecode(displayRecords[index]['categories'] ?? '[]') as List)
+              .cast<String>();
     } catch (e) {
       print('Error decoding categories: $e');
     }
@@ -981,9 +1121,9 @@ class AccountingPageState extends State<AccountingPage> {
         orElse: () {
           // 如果是临时类别，直接使用categoryString作为显示文本
           return {
-            'emoji': '',  // 移除🏷
+            'emoji': '', // 移除🏷
             'label': categoryString,
-            'color': themeColor,  // 使用主题色作为默认颜色
+            'color': themeColor, // 使用主题色作为默认颜色
             'isTemporary': true
           };
         },
@@ -996,9 +1136,9 @@ class AccountingPageState extends State<AccountingPage> {
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
-          category['isTemporary'] == true 
-              ? categoryString  // 临时类别直接显示完整文本
-              : '${category['emoji']} ${category['label']}',  // 永久类别显示emoji和标签
+          category['isTemporary'] == true
+              ? categoryString // 临时类别直接显示完整文本
+              : '${category['emoji']} ${category['label']}', // 永久类别显示emoji和标签
           style: TextStyle(fontSize: 10),
         ),
       );
@@ -1017,8 +1157,9 @@ class AccountingPageState extends State<AccountingPage> {
                     displayRecords[index]['type'] == '收入'
                         ? Icons.north_east
                         : Icons.south_west,
-                    color:
-                        displayRecords[index]['type'] == '收入' ? warmColor : coldColor,
+                    color: displayRecords[index]['type'] == '收入'
+                        ? warmColor
+                        : coldColor,
                   ),
                 ],
               ),
@@ -1041,11 +1182,7 @@ class AccountingPageState extends State<AccountingPage> {
                   SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.category,
-                        size: 16,
-                        color: const Color.fromARGB(255, 214, 214, 214),
-                      ),
+                      Icon(Icons.category, size: 16, color: const Color.fromARGB(255, 214, 214, 214)),
                       SizedBox(width: 4),
                       Expanded(
                         child: Wrap(
@@ -1138,7 +1275,8 @@ class AccountingPageState extends State<AccountingPage> {
                               return buildCategoryItem(categoryString);
                             }).toList(),
                           ),
-                          if (displayRecords[index]['note']?.isNotEmpty ?? false) ...[
+                          if (displayRecords[index]['note']?.isNotEmpty ??
+                              false) ...[
                             SizedBox(height: 4),
                             Row(
                               children: [
