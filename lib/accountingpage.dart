@@ -46,7 +46,7 @@ class AccountingPageState extends State<AccountingPage> {
   // 在 AccountingPageState 类中添加新的状态变量
   bool _isAmountAscending = true;
   bool _isTimeAscending = true;
-  // 在 AccountingPageState 类中添加的状态变量
+  // 在 AccountingPageState 类中添加���状态变量
   List<String> selectedFilterCategories = []; // 用于存储筛选选中的类别
   // 在 AccountingPageState 类中添加的状态变量
   String _sortType = 'time'; // 'time', 'amount'
@@ -588,10 +588,10 @@ class AccountingPageState extends State<AccountingPage> {
     // 累加每天的数据
     for (var record in records) {
       try {
-        // 解析时间戳并转换为本地时间
+        // 解析时���戳并转换为本地时间
         DateTime recordDate =
             DateTime.parse(record['timestamp'] ?? '').toLocal();
-        // 只保留年月日
+        // 只保留年��日
         recordDate =
             DateTime(recordDate.year, recordDate.month, recordDate.day);
 
@@ -648,7 +648,7 @@ class AccountingPageState extends State<AccountingPage> {
       print(
           '预测值: 支出=$predictedExpense, 收入=$predictedIncome, 净收入=$predictedNetIncome'); // 添加调试输出
 
-      // 添加预测的第5天数据
+      // ���加预测的第5天数据
       _expenseSpots.add(FlSpot(4, predictedExpense));
       _incomeSpots.add(FlSpot(4, predictedIncome));
       _netIncomeSpots.add(FlSpot(4, predictedNetIncome));
@@ -833,16 +833,29 @@ class AccountingPageState extends State<AccountingPage> {
                           if (index < 0 || index >= 5) return Text('');
 
                           final today = DateTime.now();
-                          final date =
-                              today.add(Duration(days: index - 3)); // 3天前到明天
-
+                          final date = today.add(Duration(days: index - 3)); // 3天前到明天
                           String dateText = '${date.month}/${date.day}';
 
+                          // 判断是否为今天的数据（index == 3）
+                          if (index == 3) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+                              child: Text(
+                                dateText,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: textColor,  // 使用主题色
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,  // 加粗
+                                ),
+                              ),
+                            );
+                          }
+
                           return Padding(
-                            padding: const EdgeInsets.only(
-                                left: 10, right: 10, top: 10, bottom: 10),
+                            padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
                             child: Text(
-                              dateText, // 给text加上边界
+                              dateText,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.grey,
@@ -861,10 +874,21 @@ class AccountingPageState extends State<AccountingPage> {
                   lineBarsData: [
                     // 支出曲线
                     LineChartBarData(
-                      spots: _expenseSpots, // 使用所有5个点
+                      spots: _expenseSpots,
                       color: coldColor,
                       barWidth: 2,
-                      dotData: FlDotData(show: false),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          // 只在 index == 3 (今天) 时显示点
+                          return FlDotCirclePainter(
+                            radius: index == 3 ? 4 : 0,  // 今天显示点，其他天不显示
+                            color: coldColor,
+                            strokeWidth: 2,
+                            strokeColor: coldColor,
+                          );
+                        },
+                      ),
                       isCurved: true,
                     ),
                     // 收入曲线
@@ -872,7 +896,17 @@ class AccountingPageState extends State<AccountingPage> {
                       spots: _incomeSpots,
                       color: warmColor,
                       barWidth: 2,
-                      dotData: FlDotData(show: false),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: index == 3 ? 4 : 0,
+                            color: warmColor,
+                            strokeWidth: 2,
+                            strokeColor: warmColor,
+                          );
+                        },
+                      ),
                       isCurved: true,
                     ),
                     // 净收入曲线
@@ -880,7 +914,17 @@ class AccountingPageState extends State<AccountingPage> {
                       spots: _netIncomeSpots,
                       color: chartColor,
                       barWidth: 2,
-                      dotData: FlDotData(show: false),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: index == 3 ? 4 : 0,
+                            color: chartColor,
+                            strokeWidth: 2,
+                            strokeColor: chartColor,
+                          );
+                        },
+                      ),
                       isCurved: true,
                     ),
                   ],
