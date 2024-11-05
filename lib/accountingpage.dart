@@ -46,7 +46,7 @@ class AccountingPageState extends State<AccountingPage> {
   // 在 AccountingPageState 类中添加新的状态变量
   bool _isAmountAscending = true;
   bool _isTimeAscending = true;
-  // 在 AccountingPageState 类中添加新的状态变量
+  // 在 AccountingPageState 类中添加的状态变量
   List<String> selectedFilterCategories = []; // 用于存储筛选选中的类别
   // 在 AccountingPageState 类中添加的状态变量
   String _sortType = 'time'; // 'time', 'amount'
@@ -81,7 +81,7 @@ class AccountingPageState extends State<AccountingPage> {
   Future<void> _loadViewMode() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _viewMode = prefs.getInt('accountingViewMode') ?? 0; // 默认为列表视图
+      _viewMode = prefs.getInt('accountingViewMode') ?? 0; // 默认列表视图
     });
   }
 
@@ -98,6 +98,14 @@ class AccountingPageState extends State<AccountingPage> {
       _isChartExpanded = prefs.getBool('accountingChartExpanded') ?? true;
     });
   }
+
+  // 在 AccountingPageState 类中添加新的变量
+  List<FlSpot> _expenseSpotsReal = [];
+  List<FlSpot> _expenseSpotsFuture = [];
+  List<FlSpot> _incomeSpotsReal = [];
+  List<FlSpot> _incomeSpotsFuture = [];
+  List<FlSpot> _netIncomeSpotsReal = [];
+  List<FlSpot> _netIncomeSpotsFuture = [];
 
   @override
   void initState() {
@@ -130,23 +138,59 @@ class AccountingPageState extends State<AccountingPage> {
   // 从本地存储加载记账记录
   Future<void> _loadRecords() async {
     if (!mounted) return;
-    //setState(() => _isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // 添加测试数据（如果记录为空的话）
+      if (prefs.getString('accountingRecords') == null) {
+        final now = DateTime.now();
+        final testRecords = [
+          {
+            'amount': '100',
+            'categories': '["🥗吃饭"]',
+            'note': '午餐',
+            'type': '支出',
+            'timestamp': now.subtract(Duration(days: 3)).toIso8601String(),
+          },
+          {
+            'amount': '200',
+            'categories': '["🏠住宿"]',
+            'note': '房租',
+            'type': '支出',
+            'timestamp': now.subtract(Duration(days: 2)).toIso8601String(),
+          },
+          {
+            'amount': '1000',
+            'categories': '["💰工资"]',
+            'note': '工资',
+            'type': '收入',
+            'timestamp': now.subtract(Duration(days: 1)).toIso8601String(),
+          },
+          {
+            'amount': '50',
+            'categories': '["🥗吃饭"]',
+            'note': '今日晚餐',
+            'type': '支出',
+            'timestamp': now.toIso8601String(),
+          },
+        ];
+
+        await prefs.setString('accountingRecords', jsonEncode(testRecords));
+      }
+
       final String? recordsString = prefs.getString('accountingRecords');
       if (!mounted) return;
+
       setState(() {
         records = recordsString != null
             ? (jsonDecode(recordsString) as List<dynamic>)
                 .map((item) => Map<String, String>.from(item))
                 .toList()
             : [];
-        //_isLoading = false;
-        _updateChartData(); // 在这里也调用更新图表
+        _updateChartData();
       });
     } catch (e) {
       print('加载记录时出错: $e');
-      //if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -157,7 +201,7 @@ class AccountingPageState extends State<AccountingPage> {
         'accountingRecords', jsonEncode(records)); // 保存记账记录到本地存储
   }
 
-  // 添加新记账记录
+  // 添加新记记录
   void _addRecord() {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -190,7 +234,7 @@ class AccountingPageState extends State<AccountingPage> {
   void _loadCategories() {
     if (!mounted) return;
     setState(() {
-      // 只加非临时类别
+      // 只加非临时类
       categories = themeProvider.categories
           .where((category) => category['isTemporary'] != true)
           .toList();
@@ -368,7 +412,7 @@ class AccountingPageState extends State<AccountingPage> {
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: Text('应用筛选'),
+                      child: Text('应用筛'),
                     ),
                   ),
                 ],
@@ -442,7 +486,7 @@ class AccountingPageState extends State<AccountingPage> {
         filteredRecords = List.from(listToSort);
       } else {
         records = List.from(listToSort);
-        _saveRecords(); // 只有在排序原始记录时才保存
+        _saveRecords(); // 只有在排序原始记录时才存
       }
     });
   }
@@ -475,25 +519,29 @@ class AccountingPageState extends State<AccountingPage> {
 
   // 添加图表数据的方法
   void _updateChartData() {
-    if (records.isEmpty) return;
-
+    // 初始化数据映射
     Map<DateTime, double> expenseByDate = {};
     Map<DateTime, double> incomeByDate = {};
     Map<DateTime, double> netIncomeByDate = {};
 
-    // 获取最早和最新日期
-    List<DateTime> dates = records.map((record) {
-      return DateTime.parse(record['timestamp'] ?? '').toLocal();
-    }).toList();
+    // 获取今天的日期（去除时分秒）
+    DateTime today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
 
-    dates.sort();
-    DateTime earliestDate = dates.first;
-    DateTime latestDate = dates.last;
+    // 创建包含5天的日期列（前3天、今天和明天）
+    List<DateTime> dates = [
+      today.subtract(Duration(days: 3)),
+      today.subtract(Duration(days: 2)),
+      today.subtract(Duration(days: 1)),
+      today,
+      today.add(Duration(days: 1)),
+    ];
 
     // 初始化所有日期的数据为0
-    for (DateTime date = earliestDate;
-        date.isBefore(latestDate.add(Duration(days: 1)));
-        date = date.add(Duration(days: 1))) {
+    for (DateTime date in dates) {
       expenseByDate[date] = 0;
       incomeByDate[date] = 0;
       netIncomeByDate[date] = 0;
@@ -501,61 +549,99 @@ class AccountingPageState extends State<AccountingPage> {
 
     // 累加每天的数据
     for (var record in records) {
-      DateTime date = DateTime.parse(record['timestamp'] ?? '').toLocal();
-      date = DateTime(date.year, date.month, date.day);
-      double amount = double.parse(record['amount'] ?? '0');
+      try {
+        // 解析时间戳并转换为本地时间
+        DateTime recordDate =
+            DateTime.parse(record['timestamp'] ?? '').toLocal();
+        // 只保留年月日
+        recordDate =
+            DateTime(recordDate.year, recordDate.month, recordDate.day);
 
-      if (record['type'] == '支出') {
-        expenseByDate[date] = (expenseByDate[date] ?? 0) + amount;
-        netIncomeByDate[date] = (netIncomeByDate[date] ?? 0) - amount;
-      } else {
-        incomeByDate[date] = (incomeByDate[date] ?? 0) + amount;
-        netIncomeByDate[date] = (netIncomeByDate[date] ?? 0) + amount;
+        // 检查日期是否在我们关心的范围内
+        DateTime matchingDate = dates.firstWhere(
+          (date) =>
+              date.year == recordDate.year &&
+              date.month == recordDate.month &&
+              date.day == recordDate.day,
+          orElse: () => dates[0], // 返回默认日期而不是 null
+        );
+
+        if (dates.contains(matchingDate)) {
+          // 只在日期在范围内时处理
+          // 解析金额
+          double amount = double.tryParse(record['amount'] ?? '0') ?? 0;
+
+          // 根据类型更新对应的数据
+          if (record['type'] == '支出') {
+            expenseByDate[matchingDate] =
+                (expenseByDate[matchingDate] ?? 0) + amount;
+            netIncomeByDate[matchingDate] =
+                (netIncomeByDate[matchingDate] ?? 0) - amount;
+          } else if (record['type'] == '收入') {
+            incomeByDate[matchingDate] =
+                (incomeByDate[matchingDate] ?? 0) + amount;
+            netIncomeByDate[matchingDate] =
+                (netIncomeByDate[matchingDate] ?? 0) + amount;
+          }
+        }
+      } catch (e) {
+        print('Error processing record: $e');
       }
     }
-
-    // 转换为图表数据点
-    _expenseSpots = [];
-    _incomeSpots = [];
-    _netIncomeSpots = [];
-
-    int i = 0;
-    for (DateTime date = earliestDate;
-        date.isBefore(latestDate.add(Duration(days: 1)));
-        date = date.add(Duration(days: 1))) {
-      _expenseSpots.add(FlSpot(i.toDouble(), expenseByDate[date] ?? 0));
-      _incomeSpots.add(FlSpot(i.toDouble(), incomeByDate[date] ?? 0));
-      _netIncomeSpots.add(FlSpot(i.toDouble(), netIncomeByDate[date] ?? 0));
-      i++;
-    }
-
-    // 计算最大最小值
-    double maxAmount = [
-      ..._expenseSpots.map((spot) => spot.y),
-      ..._incomeSpots.map((spot) => spot.y),
-      ..._netIncomeSpots.map((spot) => spot.y)
-    ].reduce((max, value) => value > max ? value : max);
-
-    double minAmount = [
-      ..._expenseSpots.map((spot) => spot.y),
-      ..._incomeSpots.map((spot) => spot.y),
-      ..._netIncomeSpots.map((spot) => spot.y)
-    ].reduce((min, value) => value < min ? value : min);
 
     setState(() {
-      // 如果最大值和最小值相等，强制设置一个范围
-      if (maxAmount == minAmount) {
-        _maxY = maxAmount + 1.0;
-        _minY = maxAmount - 1.0;
+      _expenseSpots = [];
+      _incomeSpots = [];
+      _netIncomeSpots = [];
+
+      // 先生成前4天的实际数据点
+      for (int i = 0; i < 4; i++) {
+        DateTime date = dates[i];
+        _expenseSpots.add(FlSpot(i.toDouble(), expenseByDate[date] ?? 0));
+        _incomeSpots.add(FlSpot(i.toDouble(), incomeByDate[date] ?? 0));
+        _netIncomeSpots.add(FlSpot(i.toDouble(), netIncomeByDate[date] ?? 0));
+      }
+
+      // 计算并添加预测值
+      double predictedExpense = _predictNextValue(_expenseSpots);
+      double predictedIncome = _predictNextValue(_incomeSpots);
+      double predictedNetIncome = _predictNextValue(_netIncomeSpots);
+
+      print(
+          '预测值: 支出=$predictedExpense, 收入=$predictedIncome, 净收入=$predictedNetIncome'); // 添加调试输出
+
+      // 添加预测的第5天数据
+      _expenseSpots.add(FlSpot(4, predictedExpense));
+      _incomeSpots.add(FlSpot(4, predictedIncome));
+      _netIncomeSpots.add(FlSpot(4, predictedNetIncome));
+
+      // 计算最大最小值
+      List<double> allValues = [
+        ..._expenseSpots.map((spot) => spot.y),
+        ..._incomeSpots.map((spot) => spot.y),
+        ..._netIncomeSpots.map((spot) => spot.y),
+      ];
+
+      if (allValues.isEmpty || allValues.every((value) => value == 0)) {
+        _maxY = 100; // 设置默认最大值
+        _minY = -100; // 修改默认最小值为负数
       } else {
-        _maxY = maxAmount * 1.1;
-        _minY = minAmount * 1.1;
-        
-        // 确保最大值和最小值之间至少有 1.0 的差值
-        if (_maxY - _minY < 1.0) {
-          _maxY = _minY + 1.0;
+        _maxY = allValues.reduce(math.max) * 1.1;
+        _minY = allValues.reduce(math.min) * 1.5; // 将系数从0.9改为1.2，使最小值范围更大
+
+        if (_maxY == _minY) {
+          _maxY += 1;
+          _minY -= 1;
         }
       }
+
+      // 分割现有数据和预测数据（今天的索引是3）
+      _expenseSpotsReal = _expenseSpots.sublist(0, 4); // 0到今天
+      _expenseSpotsFuture = _expenseSpots.sublist(3); // 今天到明天
+      _incomeSpotsReal = _incomeSpots.sublist(0, 4);
+      _incomeSpotsFuture = _incomeSpots.sublist(3);
+      _netIncomeSpotsReal = _netIncomeSpots.sublist(0, 4);
+      _netIncomeSpotsFuture = _netIncomeSpots.sublist(3);
     });
   }
 
@@ -588,7 +674,7 @@ class AccountingPageState extends State<AccountingPage> {
             Row(
               children: [
                 Container(
-                  margin: EdgeInsets.only(right: 16),
+                  margin: EdgeInsets.only(right: 10),
                   child: Row(
                     children: [
                       Container(
@@ -597,12 +683,13 @@ class AccountingPageState extends State<AccountingPage> {
                         color: warmColor,
                       ),
                       SizedBox(width: 4),
-                      Text('收入', style: TextStyle(fontSize: 12)),
+                      Text('收入',
+                          style: TextStyle(fontSize: 12, color: warmColor)),
                     ],
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(right: 16),
+                  margin: EdgeInsets.only(right: 10),
                   child: Row(
                     children: [
                       Container(
@@ -611,21 +698,23 @@ class AccountingPageState extends State<AccountingPage> {
                         color: coldColor,
                       ),
                       SizedBox(width: 4),
-                      Text('支出', style: TextStyle(fontSize: 12)),
+                      Text('支出',
+                          style: TextStyle(fontSize: 12, color: coldColor)),
                     ],
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(right: 8),
+                  margin: EdgeInsets.only(right: 0),
                   child: Row(
                     children: [
                       Container(
                         width: 12,
                         height: 2,
-                        color: textColor,
+                        color: chartColor,
                       ),
                       SizedBox(width: 4),
-                      Text('净收入', style: TextStyle(fontSize: 12)),
+                      Text('净收入',
+                          style: TextStyle(fontSize: 12, color: chartColor)),
                     ],
                   ),
                 ),
@@ -646,12 +735,12 @@ class AccountingPageState extends State<AccountingPage> {
         ),
         AnimatedContainer(
           duration: Duration(milliseconds: 280),
-          height: _isChartExpanded ? 200 : 0,
+          height: _isChartExpanded ? 170 : 0,
           child: SingleChildScrollView(
             physics: NeverScrollableScrollPhysics(),
             child: Container(
-              height: 200,
-              padding: EdgeInsets.all(16),
+              height: 180,
+              padding: EdgeInsets.only(left: 12, right: 17, top: 5, bottom: 0),
               child: LineChart(
                 LineChartData(
                   minY: _minY,
@@ -659,18 +748,19 @@ class AccountingPageState extends State<AccountingPage> {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: true,
-                    horizontalInterval: math.max((_maxY - _minY) / 10, 0.1), // 添加最小值限制
+                    horizontalInterval:
+                        math.max((_maxY - _minY) / 10, 0.1), // 添加最小值限制
                     verticalInterval: 1,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
                         color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 0.5,
+                        strokeWidth: 1.2,
                       );
                     },
                     getDrawingVerticalLine: (value) {
                       return FlLine(
                         color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 0.5,
+                        strokeWidth: 1.2,
                       );
                     },
                   ),
@@ -678,14 +768,18 @@ class AccountingPageState extends State<AccountingPage> {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
-                        interval: math.max((_maxY - _minY) / 5, 0.1), // 只显示5个刻度，且最小间隔为 0.1
+                        reservedSize: 38,
+                        interval: math.max((_maxY - _minY) / 5, 0.1),
                         getTitlesWidget: (value, meta) {
+                          // 如果是最小值，则不显示
+                          if (value == _minY) {
+                            return const SizedBox.shrink();
+                          }
                           return Text(
-                            value.toStringAsFixed(1),
+                            value.toStringAsFixed(0),
                             style: TextStyle(
                               color: Colors.grey,
-                              fontSize: 10,
+                              fontSize: 11,
                             ),
                           );
                         },
@@ -694,22 +788,27 @@ class AccountingPageState extends State<AccountingPage> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 22,
-                        interval: _expenseSpots.length > 7
-                            ? _expenseSpots.length / 7
-                            : 1, // 最多显示7个日期
+                        reservedSize: 30,
                         getTitlesWidget: (value, meta) {
                           if (value % 1 != 0) return Text('');
                           final index = value.toInt();
-                          if (index < 0 || index >= records.length)
-                            return Text('');
+                          if (index < 0 || index >= 5) return Text('');
+
+                          final today = DateTime.now();
                           final date =
-                              DateTime.parse(records[index]['timestamp'] ?? '');
-                          return Text(
-                            '${date.month}/${date.day}',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 10,
+                              today.add(Duration(days: index - 3)); // 3天前到明天
+
+                          String dateText = '${date.month}/${date.day}';
+
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+                            child: Text(
+                              dateText, // 给text加上边界
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
+                              ),
                             ),
                           );
                         },
@@ -721,26 +820,29 @@ class AccountingPageState extends State<AccountingPage> {
                         AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   lineBarsData: [
+                    // 支出曲线
                     LineChartBarData(
-                      spots: _expenseSpots,
+                      spots: _expenseSpots, // 使用所有5个点
                       color: coldColor,
                       barWidth: 2,
                       dotData: FlDotData(show: false),
-                      isCurved: true, // 使用曲线
+                      isCurved: true,
                     ),
+                    // 收入曲线
                     LineChartBarData(
                       spots: _incomeSpots,
                       color: warmColor,
                       barWidth: 2,
                       dotData: FlDotData(show: false),
-                      isCurved: true, // 使用曲线
+                      isCurved: true,
                     ),
+                    // 净收入曲线
                     LineChartBarData(
                       spots: _netIncomeSpots,
-                      color: textColor,
+                      color: chartColor,
                       barWidth: 2,
                       dotData: FlDotData(show: false),
-                      isCurved: true, // 使用曲线
+                      isCurved: true,
                     ),
                   ],
                   lineTouchData: LineTouchData(
@@ -760,6 +862,27 @@ class AccountingPageState extends State<AccountingPage> {
                           );
                         }).toList();
                       },
+                    ),
+                  ),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border(
+                      left: BorderSide(
+                        color: Colors.grey.withOpacity(0.5),  // 左边框颜色
+                        width: 1.5,  // 左边框宽度
+                      ),
+                      bottom: BorderSide(
+                        color: Colors.grey.withOpacity(0.5),  // 下边框颜色
+                        width: 1.5,  // 下边框宽度
+                      ),
+                      top: BorderSide(
+                        color: Colors.grey.withOpacity(0.2),  // 上边框颜色（更淡）
+                        width: 1,  // 上边框宽度（更细）
+                      ),
+                      right: BorderSide(
+                        color: Colors.grey.withOpacity(0.2),  // 右边框颜色（更淡）
+                        width: 1,  // 右边框宽度（更细）
+                      ),
                     ),
                   ),
                 ),
@@ -1040,12 +1163,12 @@ class AccountingPageState extends State<AccountingPage> {
                     _isDeleteMode = !_isDeleteMode;
                   });
                 },
-                tooltip: _isDeleteMode ? '退出删除模式' : '进入删除模式',
+                tooltip: _isDeleteMode ? '退出删除模式' : '入删除模式',
               ),
             ],
           ),
           SizedBox(height: 8),
-          // 账单列表
+          // 账单列
           Expanded(
             child: _viewMode == 0
                 ? ListView.builder(
@@ -1121,7 +1244,7 @@ class AccountingPageState extends State<AccountingPage> {
         orElse: () {
           // 如果是临时类别，直接使用categoryString作为显示文本
           return {
-            'emoji': '', // 移除🏷
+            'emoji': '', // 移🏷
             'label': categoryString,
             'color': themeColor, // 使用主题色作为默认颜色
             'isTemporary': true
@@ -1182,7 +1305,9 @@ class AccountingPageState extends State<AccountingPage> {
                   SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.category, size: 16, color: const Color.fromARGB(255, 214, 214, 214)),
+                      Icon(Icons.category,
+                          size: 16,
+                          color: const Color.fromARGB(255, 214, 214, 214)),
                       SizedBox(width: 4),
                       Expanded(
                         child: Wrap(
@@ -1317,7 +1442,7 @@ class AccountingPageState extends State<AccountingPage> {
     }
   }
 
-  // 添加颜色选器方法
+  // 加颜色选器方法
   Future<Color?> showColorPicker(
       BuildContext context, Color initialColor) async {
     if (!mounted) return null;
@@ -1385,5 +1510,32 @@ class AccountingPageState extends State<AccountingPage> {
     });
     _saveRecords(); // 保存更改到本地存储
     _updateChartData();
+  }
+
+  // 添加这个辅助方法
+  List<int>? _getDashArray({required int index}) {
+    return [3, 3]; // 只对最后一段应用虚线
+  }
+
+  // 添加预测下一个值的方法
+  double _predictNextValue(List<FlSpot> spots) {
+    if (spots.isEmpty) return 0;
+    if (spots.length == 1) return spots[0].y;
+
+    // 使用简单线性回归预测
+    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    int n = spots.length;
+
+    for (int i = 0; i < n; i++) {
+      sumX += spots[i].x;
+      sumY += spots[i].y;
+      sumXY += spots[i].x * spots[i].y;
+      sumX2 += spots[i].x * spots[i].x;
+    }
+
+    double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    double intercept = (sumY - slope * sumX) / n;
+
+    return slope * n + intercept;
   }
 }

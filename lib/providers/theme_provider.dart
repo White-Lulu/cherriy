@@ -256,7 +256,7 @@ class ColorScorer {
 
   static Color lerpColorWithBias(Color color1, Color color2, {bool biasTowards1 = true}) {
     // 设置权重为0.8和0.2
-    final t = biasTowards1 ? 0.3 : 0.7;
+    final t = biasTowards1 ? 0.4 : 0.6;
     if (getTotalScore(color1) > getTotalScore(color2)) {
       return Color.lerp(color1, color2, t)!;
     } else {
