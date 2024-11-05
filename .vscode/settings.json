@@ -1,4 +1,5 @@
 {
     "cmake.sourceDirectory": "F:/fff/FlutterProject/cherriy/linux",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "git.ignoreLimitWarning": true
 }

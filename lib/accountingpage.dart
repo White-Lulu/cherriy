@@ -7,6 +7,7 @@ import '../providers/theme_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // 导入颜色选择器库
 import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
+import '../widgets/category_dialog.dart';
 
 // 记账页面
 class AccountingPage extends StatefulWidget {
@@ -197,65 +198,23 @@ class AccountingPageState extends State<AccountingPage> {
   }
 
   void _addCustomCategory() async {
-    if (!mounted) return;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (BuildContext context) {
-        String emoji = '';  // 初始化为空字符串
-        String label = '';
-        Color color = Theme.of(context).primaryColor;  // 使用主题色作为默认颜色
-        
-        return AlertDialog(
-          title: Text('添加自定义类别'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(labelText: 'Emoji'),
-                onChanged: (value) => emoji = value,
-              ),
-              TextField(
-                decoration: InputDecoration(labelText: '类别名称'),
-                onChanged: (value) => label = value,
-              ),
-              ElevatedButton(
-                child: Text('选择颜色'),
-                onPressed: () async {
-                  final Color? newColor = await showColorPicker(context, color);
-                  if (newColor != null) {
-                    color = newColor;
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: Text('确定'),
-              onPressed: () {
-                if (label.isNotEmpty) {
-                  Navigator.of(context).pop({
-                    'emoji': emoji,
-                    'label': label,
-                    'color': color,
-                    'isTemporary': true,
-                  });
-                }
-              },
-            ),
-          ],
-        );
-      },
+      builder: (BuildContext context) => CategoryDialog(
+        title: '添加临时标签',
+        initialEmoji: '',
+        initialLabel: '',
+        initialColor: Theme.of(context).primaryColor,
+        isEditing: false,
+      ),
     );
 
     if (result != null) {
       setState(() {
-        categories.add(result);
-        // 添加选中的类别时，只使用emoji和label的组合
+        categories.add({
+          ...result,
+          'isTemporary': true,
+        });
         selectedCategories.add('${result['emoji']}${result['label']}');
       });
     }
@@ -284,8 +243,8 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = _getWarmColor(themeColor, textColor);
-    final coldColor = _getColdColor(themeColor, textColor);
+    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
     FocusScope.of(context).unfocus();
 
     showModalBottomSheet(
@@ -512,7 +471,7 @@ class AccountingPageState extends State<AccountingPage> {
     });
   }
 
-  // 添加处理图表数据的方法
+  // 添加图表数据的方法
   void _updateChartData() {
     if (records.isEmpty) return;
 
@@ -583,16 +542,17 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = _getWarmColor(themeColor, textColor);
-    final coldColor = _getColdColor(themeColor, textColor);
+    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
 
     return Column(
       children: [
         // 添加折叠按钮
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('收支趋势', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('  净收入', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(':  ${_netIncomeSpots.last.y.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: warmColor)),
+            Spacer(),
             IconButton(
               icon: Icon(_isChartExpanded ? Icons.expand_less : Icons.expand_more),
               onPressed: () {
@@ -607,7 +567,7 @@ class AccountingPageState extends State<AccountingPage> {
         ),
         // 使用AnimatedContainer实现平滑的展开/收起效果
         AnimatedContainer(
-          duration: Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 280),
           height: _isChartExpanded ? 200 : 0,
           child: SingleChildScrollView(
             physics: NeverScrollableScrollPhysics(),
@@ -670,8 +630,8 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = _getWarmColor(themeColor, textColor);
-    final coldColor = _getColdColor(themeColor, textColor);
+    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -856,7 +816,7 @@ class AccountingPageState extends State<AccountingPage> {
                                       ),
                                     ),
                                     cursorColor: const Color.fromARGB(
-                                        255, 214, 214, 214), // 设置获���点时的横线颜色
+                                        255, 214, 214, 214), // 设置获点时的横线颜色
                                   ),
                                 ),
                               ),
@@ -1003,8 +963,8 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = _getWarmColor(themeColor, textColor);
-    final coldColor = _getColdColor(themeColor, textColor);
+    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor); 
+    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
 
     List<String> recordCategories = [];
     try {
@@ -1037,7 +997,7 @@ class AccountingPageState extends State<AccountingPage> {
         child: Text(
           category['isTemporary'] == true 
               ? categoryString  // 临时类别直接显示完整文本
-              : '${category['emoji']} ${category['label']}',  // 永久类别显示emoji和标签
+              : '${category['emoji']} ${category['label']}',  // 永久类别显���emoji和标签
           style: TextStyle(fontSize: 10),
         ),
       );
@@ -1216,20 +1176,6 @@ class AccountingPageState extends State<AccountingPage> {
         ],
       );
     }
-  }
-
-  // 在类的其他地方添加这些辅助方法
-  Color _getWarmColor(Color color1, Color color2) {
-    return _isWarmer(color1, color2) ? color1 : color2;
-  }
-
-  Color _getColdColor(Color color1, Color color2) {
-    return _isWarmer(color1, color2) ? color2 : color1;
-  }
-
-  bool _isWarmer(Color color1, Color color2) {
-    // 简单地比较红色和蓝色分
-    return (color1.red - color1.blue) > (color2.red - color2.blue);
   }
 
   // 添加颜色选器方法

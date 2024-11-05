@@ -37,7 +37,7 @@ class _EmojiDialogState extends State<EmojiDialog> {
         left: 24, 
         top: 6, 
         right: 24, 
-        bottom: 14,
+        bottom: 12,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,

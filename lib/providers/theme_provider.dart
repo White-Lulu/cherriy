@@ -245,4 +245,12 @@ class WarmColorScorer {
     double brightnessScore = getBrightnessScore(color);
     return warmScore * 0.5 + 1-brightnessScore * 0.5;
   }
+
+  static Color getWarmColor(Color color1,Color color2) {
+    return getTotalScore(color1) > getTotalScore(color2) ? color1 : color2;
+  }
+
+  static Color getColdColor(Color color1,Color color2) {
+    return getTotalScore(color1) > getTotalScore(color2) ? color2 : color1;
+  }
 }
