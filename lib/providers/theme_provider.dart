@@ -213,7 +213,7 @@ class ThemeProvider with ChangeNotifier {
   }
 }
 
-class WarmColorScorer {
+class ColorScorer {
   // 获取颜色的冷暖分数 (0.0最冷 到 1.0最暖)
   static double getWarmScore(Color color) {
     // 使用HSV色彩空间来判断冷暖
@@ -253,4 +253,15 @@ class WarmColorScorer {
   static Color getColdColor(Color color1,Color color2) {
     return getTotalScore(color1) > getTotalScore(color2) ? color2 : color1;
   }
+
+  static Color lerpColorWithBias(Color color1, Color color2, {bool biasTowards1 = true}) {
+    // 设置权重为0.8和0.2
+    final t = biasTowards1 ? 0.3 : 0.7;
+    if (getTotalScore(color1) > getTotalScore(color2)) {
+      return Color.lerp(color1, color2, t)!;
+    } else {
+      return Color.lerp(color2, color1, t)!;
+    }
+  }
+
 }

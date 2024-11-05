@@ -243,8 +243,8 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor);
-    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
+    final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = ColorScorer.getColdColor(themeColor, textColor);
     FocusScope.of(context).unfocus();
 
     showModalBottomSheet(
@@ -542,16 +542,17 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor);
-    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
+    final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = ColorScorer.getColdColor(themeColor, textColor);
+    final chartColor = ColorScorer.lerpColorWithBias(warmColor, coldColor);
 
     return Column(
       children: [
         // 添加折叠按钮
         Row(
           children: [
-            Text('  净收入', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(':  ${_netIncomeSpots.last.y.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: warmColor)),
+            Text('  净收入 :', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color:const Color.fromARGB(255, 129, 129, 129))),
+            Text(' ${_netIncomeSpots.last.y.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: chartColor)),
             Spacer(),
             IconButton(
               icon: Icon(_isChartExpanded ? Icons.expand_less : Icons.expand_more),
@@ -568,52 +569,52 @@ class AccountingPageState extends State<AccountingPage> {
         // 使用AnimatedContainer实现平滑的展开/收起效果
         AnimatedContainer(
           duration: Duration(milliseconds: 280),
-          height: _isChartExpanded ? 200 : 0,
-          child: SingleChildScrollView(
-            physics: NeverScrollableScrollPhysics(),
-            child: Container(
+          height: _isChartExpanded ? 200 : 0, // 设置高度
+          child: SingleChildScrollView( // 使用SingleChildScrollView实现滚动
+            physics: NeverScrollableScrollPhysics(), // 禁用滚动
+            child: Container( // 设置容器的高度和内边距
               height: 200,
               padding: EdgeInsets.all(16),
-              child: LineChart(
+              child: LineChart( // 使用LineChart绘制图表
                 LineChartData(
-                  minY: _minY,
-                  maxY: _maxY,
-                  gridData: FlGridData(show: true),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                  minY: _minY, // 设置最小Y值
+                  maxY: _maxY, // 设置最大Y值
+                  gridData: FlGridData(show: true), // 显示网格
+                  titlesData: FlTitlesData( 
+                    leftTitles: AxisTitles( // 设置左侧标题
+                      sideTitles: SideTitles(showTitles: true, reservedSize: 40), // 设置左侧标题的显示和大小
                     ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                    bottomTitles: AxisTitles( // 设置底部标题
+                      sideTitles: SideTitles(showTitles: false), // 设置底部标题的显示
                     ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                    rightTitles: AxisTitles( // 设置右侧标题
+                      sideTitles: SideTitles(showTitles: false), // 设置右侧标题的显示
                     ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                    topTitles: AxisTitles( // 设置顶部标题
+                      sideTitles: SideTitles(showTitles: false), // 设置顶部标题的显示
                     ),
                   ),
                   lineBarsData: [
                     // 支出线
-                    LineChartBarData(
-                      spots: _expenseSpots,
-                      color: coldColor,
-                      barWidth: 2,
-                      dotData: FlDotData(show: false),
+                    LineChartBarData( // 支出线的数据
+                      spots: _expenseSpots, // 支出线的点数据
+                      color: coldColor, // 支出线的颜色
+                      barWidth: 2, // 支出线的宽度
+                      dotData: FlDotData(show: false), // 支出点的显示
                     ),
                     // 收入线
-                    LineChartBarData(
-                      spots: _incomeSpots,
-                      color: warmColor,
-                      barWidth: 2,
-                      dotData: FlDotData(show: false),
+                    LineChartBarData( // 收入线的数据
+                      spots: _incomeSpots, // 收入线的点数据
+                      color: warmColor, // 收入线的颜色
+                      barWidth: 2, // 收入线的宽度
+                      dotData: FlDotData(show: false), // 收入点的显示
                     ),
                     // 净收入线
-                    LineChartBarData(
-                      spots: _netIncomeSpots,
-                      color: textColor,
-                      barWidth: 2,
-                      dotData: FlDotData(show: false),
+                    LineChartBarData( // 净收入线的数据
+                      spots: _netIncomeSpots, // 净收入线的点数据
+                      color: textColor, // 净收入线的颜色
+                      barWidth: 2, // 净收入线的宽度
+                      dotData: FlDotData(show: false), // 净收入点的显示
                     ),
                   ],
                 ),
@@ -630,8 +631,8 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor);
-    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
+    final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = ColorScorer.getColdColor(themeColor, textColor);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -963,8 +964,8 @@ class AccountingPageState extends State<AccountingPage> {
     final themeColor = Theme.of(context).primaryColor;
     final textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-    final warmColor = WarmColorScorer.getWarmColor(themeColor, textColor); 
-    final coldColor = WarmColorScorer.getColdColor(themeColor, textColor);
+    final warmColor = ColorScorer.getWarmColor(themeColor, textColor); 
+    final coldColor = ColorScorer.getColdColor(themeColor, textColor);
 
     List<String> recordCategories = [];
     try {
@@ -997,7 +998,7 @@ class AccountingPageState extends State<AccountingPage> {
         child: Text(
           category['isTemporary'] == true 
               ? categoryString  // 临时类别直接显示完整文本
-              : '${category['emoji']} ${category['label']}',  // 永久类别显���emoji和标签
+              : '${category['emoji']} ${category['label']}',  // 永久类别显示emoji和标签
           style: TextStyle(fontSize: 10),
         ),
       );

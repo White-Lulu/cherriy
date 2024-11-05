@@ -315,18 +315,18 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   borderRadius: BorderRadius.circular(7),
                   side: BorderSide(
                     color: _deleteModes[type]!
-                        ? WarmColorScorer.getTotalScore(
+                        ? ColorScorer.getTotalScore(
                                     Theme.of(context).primaryColor) >
-                                WarmColorScorer.getTotalScore(Theme.of(context)
+                                ColorScorer.getTotalScore(Theme.of(context)
                                     .textTheme
                                     .bodyMedium!
                                     .color!)
                             ? Theme.of(context).primaryColor
                             : Theme.of(context).textTheme.bodyMedium!.color!
                         : _editModes[type]!
-                            ? WarmColorScorer.getTotalScore(
+                            ? ColorScorer.getTotalScore(
                                         Theme.of(context).primaryColor) >
-                                    WarmColorScorer.getTotalScore(
+                                    ColorScorer.getTotalScore(
                                         Theme.of(context)
                                             .textTheme
                                             .bodyMedium!
@@ -425,9 +425,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           icon: Icon(
             Icons.edit,
             color: _editModes[type]!
-                ? WarmColorScorer.getTotalScore(
+                ? ColorScorer.getTotalScore(
                             Theme.of(context).primaryColor) >
-                        WarmColorScorer.getTotalScore(
+                        ColorScorer.getTotalScore(
                             Theme.of(context).textTheme.bodyMedium!.color!)
                     ? Theme.of(context).textTheme.bodyMedium!.color!
                     : Theme.of(context).primaryColor
@@ -450,9 +450,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           icon: Icon(
             Icons.delete,
             color: _deleteModes[type]!
-                ? WarmColorScorer.getTotalScore(
+                ? ColorScorer.getTotalScore(
                             Theme.of(context).primaryColor) >
-                        WarmColorScorer.getTotalScore(
+                        ColorScorer.getTotalScore(
                             Theme.of(context).textTheme.bodyMedium!.color!)
                     ? Theme.of(context).primaryColor
                     : Theme.of(context).textTheme.bodyMedium!.color!
@@ -486,9 +486,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           icon: Icon(
             Icons.edit,
             color: _editModes['diary']!
-                ? WarmColorScorer.getTotalScore(
+                ? ColorScorer.getTotalScore(
                             Theme.of(context).primaryColor) >
-                        WarmColorScorer.getTotalScore(
+                        ColorScorer.getTotalScore(
                             Theme.of(context).textTheme.bodyMedium!.color!)
                     ? Theme.of(context).textTheme.bodyMedium!.color!
                     : Theme.of(context).primaryColor
@@ -511,9 +511,9 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
           icon: Icon(
             Icons.delete,
             color: _deleteModes['diary']!
-                ? WarmColorScorer.getTotalScore(
+                ? ColorScorer.getTotalScore(
                             Theme.of(context).primaryColor) >
-                        WarmColorScorer.getTotalScore(
+                        ColorScorer.getTotalScore(
                             Theme.of(context).textTheme.bodyMedium!.color!)
                     ? Theme.of(context).primaryColor
                     : Theme.of(context).textTheme.bodyMedium!.color!
@@ -576,18 +576,18 @@ class ThemeSettingsPageState extends State<ThemeSettingsPage> {
               decoration: BoxDecoration(
                 border: Border.all(
                   color: _deleteModes['diary']!
-                        ? WarmColorScorer.getTotalScore(
+                        ? ColorScorer.getTotalScore(
                                     Theme.of(context).primaryColor) >
-                                WarmColorScorer.getTotalScore(Theme.of(context)
+                                ColorScorer.getTotalScore(Theme.of(context)
                                     .textTheme
                                     .bodyMedium!
                                     .color!)
                             ? Theme.of(context).primaryColor
                             : Theme.of(context).textTheme.bodyMedium!.color!
                         : _editModes['diary']!
-                            ? WarmColorScorer.getTotalScore(
+                            ? ColorScorer.getTotalScore(
                                         Theme.of(context).primaryColor) >
-                                    WarmColorScorer.getTotalScore(
+                                    ColorScorer.getTotalScore(
                                         Theme.of(context)
                                             .textTheme
                                             .bodyMedium!
