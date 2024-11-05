@@ -285,8 +285,7 @@ class AccountingPageState extends State<AccountingPage> {
   // 添加筛选方法
   void _showFilterBottomSheet() {
     final themeColor = Theme.of(context).primaryColor;
-    final textColor =
-        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
     final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
     final coldColor = ColorScorer.getColdColor(themeColor, textColor);
     FocusScope.of(context).unfocus();
@@ -294,7 +293,7 @@ class AccountingPageState extends State<AccountingPage> {
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (BuildContext context) {
         return StatefulBuilder(
@@ -308,9 +307,7 @@ class AccountingPageState extends State<AccountingPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('筛选',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text('筛选', style: Theme.of(context).textTheme.titleLarge),
                       TextButton(
                         onPressed: () {
                           setState(() {
@@ -320,14 +317,16 @@ class AccountingPageState extends State<AccountingPage> {
                           Navigator.pop(context);
                           _applyFilter();
                         },
+                        
+                        style: TextButton.styleFrom(
+                          foregroundColor: themeColor,
+                        ),
                         child: Text('清除筛选'),
                       ),
                     ],
                   ),
-                  Divider(),
-                  Text('收支类型',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+                  Text('收支类型', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 8),
                   Row(
                     children: [
@@ -336,17 +335,15 @@ class AccountingPageState extends State<AccountingPage> {
                         selected: selectedTransactionType == '收入',
                         onSelected: (bool selected) {
                           setState(() {
-                            // 如果已经选中了"收入"，再次点击就取消选择
-                            if (selectedTransactionType == '收入') {
-                              selectedTransactionType = null;
-                            } else {
-                              // 否则选择"收入"
-                              selectedTransactionType = '收入';
-                            }
+                            selectedTransactionType = selected ? '收入' : null;
                           });
                         },
                         backgroundColor: warmColor.withOpacity(0.1),
-                        selectedColor: warmColor.withOpacity(0.3),
+                        selectedColor: warmColor.withOpacity(0.2),
+                        checkmarkColor: warmColor,
+                        labelStyle: TextStyle(
+                          color: selectedTransactionType == '收入' ? warmColor : textColor,
+                        ),
                       ),
                       SizedBox(width: 8),
                       FilterChip(
@@ -354,33 +351,27 @@ class AccountingPageState extends State<AccountingPage> {
                         selected: selectedTransactionType == '支出',
                         onSelected: (bool selected) {
                           setState(() {
-                            // 如果已经选中了"支出"，再次点击就取消选择
-                            if (selectedTransactionType == '支出') {
-                              selectedTransactionType = null;
-                            } else {
-                              // 否则选择"支出"
-                              selectedTransactionType = '支出';
-                            }
+                            selectedTransactionType = selected ? '支出' : null;
                           });
                         },
                         backgroundColor: coldColor.withOpacity(0.1),
-                        selectedColor: coldColor.withOpacity(0.3),
+                        selectedColor: coldColor.withOpacity(0.2),
+                        checkmarkColor: coldColor,
+                        labelStyle: TextStyle(
+                          color: selectedTransactionType == '支出' ? coldColor : textColor,
+                        ),
                       ),
                     ],
                   ),
-                  Divider(),
-                  Text('类别',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+                  Text('类别', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: categories.map((category) {
-                      String categoryString =
-                          '${category['emoji']}${category['label']}';
-                      bool isSelected =
-                          selectedFilterCategories.contains(categoryString);
+                      String categoryString = '${category['emoji']}${category['label']}';
+                      bool isSelected = selectedFilterCategories.contains(categoryString);
                       return FilterChip(
                         label: Text(categoryString),
                         selected: isSelected,
@@ -394,26 +385,30 @@ class AccountingPageState extends State<AccountingPage> {
                           });
                         },
                         backgroundColor: category['color'].withOpacity(0.1),
-                        selectedColor: category['color'].withOpacity(0.3),
+                        selectedColor: category['color'].withOpacity(0.2),
                         checkmarkColor: category['color'],
+                        labelStyle: TextStyle(
+                          color: isSelected ? category['color'] : textColor,
+                          fontSize: 12,
+                        ),
                       );
                     }).toList(),
                   ),
                   SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // 确保在关时不会触发键盘
-                        FocusScope.of(context).unfocus();
-                        Navigator.pop(context);
-                        _applyFilter();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _applyFilter();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeColor,
+                      foregroundColor: textColor,
+                      minimumSize: Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text('应用筛'),
                     ),
+                    child: Text('应用筛选'),
                   ),
                 ],
               ),
@@ -659,7 +654,7 @@ class AccountingPageState extends State<AccountingPage> {
       children: [
         Row(
           children: [
-            Text('  净收入 :',
+            Text('  收入 :',
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1268,7 +1263,7 @@ class AccountingPageState extends State<AccountingPage> {
     }
 
     if (_viewMode == 0) {
-      // 列表视的布局���保持原来的样式）
+      // 列表视的布局保持原来的样式）
       return Card(
         child: Stack(
           children: [
