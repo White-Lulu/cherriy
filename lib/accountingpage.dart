@@ -1105,10 +1105,10 @@ class AccountingPageState extends State<AccountingPage> {
               ),
             ),
           ),
-          SizedBox(height: 16),
-          _buildChart(), // 添加图表
-          SizedBox(height: 16),
-          // 新增：视切换图标
+          SizedBox(height: 8),
+          _buildChart(), // 图表
+          SizedBox(height: 8),
+          // 新增：视图切换图标
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -1268,7 +1268,7 @@ class AccountingPageState extends State<AccountingPage> {
     }
 
     if (_viewMode == 0) {
-      // 列表视的布局（保持原来的样式）
+      // 列表视的布局���保持原来的样式）
       return Card(
         child: Stack(
           children: [
