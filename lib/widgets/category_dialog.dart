@@ -45,7 +45,7 @@ class _CategoryDialogState extends State<CategoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
+      title: Text(widget.title,style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black),),
       titlePadding: EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 0),
       contentPadding: EdgeInsets.only(left: 24, top: 6, right: 24, bottom: 20),
       content: Column(
@@ -126,20 +126,20 @@ class _CategoryDialogState extends State<CategoryDialog> {
                   child: Center(
                     child: Text(
                       '选择颜色',
-                      style: TextStyle(color: Colors.black, fontSize: 15),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black, fontSize: 15),
                     ),
                   ),
                 ),
               ),
               SizedBox(width: 10),
               TextButton(
-                child: Text('取消', style: TextStyle(color: Colors.black)),
+                child: Text('取消', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black)),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               TextButton(
                 child: Text(
                   widget.isEditing ? '保存' : '添加',
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop({

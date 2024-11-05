@@ -104,6 +104,9 @@ class ThemeProvider with ChangeNotifier {
       textTheme: TextTheme(
         headlineMedium: TextStyle(color: Color(themeTextColor)),
         bodyMedium: TextStyle(color: Color(themeTextColor)),
+        //bodyLarge: TextStyle(color: Colors.white),
+        titleLarge: TextStyle(color: Color(themeTextColor)),
+        titleMedium: TextStyle(color: Color(themeTextColor)),
       ),
       dialogTheme: DialogTheme(
         backgroundColor: Color(primaryColor).withOpacity(0.8),

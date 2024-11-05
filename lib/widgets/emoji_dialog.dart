@@ -26,7 +26,7 @@ class _EmojiDialogState extends State<EmojiDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
+      title: Text(widget.title,style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black),),
       titlePadding: EdgeInsets.only(
         left: 24, 
         top: 24, 
@@ -73,14 +73,14 @@ class _EmojiDialogState extends State<EmojiDialog> {
               TextButton(
                 child: Text(
                   '取消',
-                  style: TextStyle(color: Colors.black, fontSize: 15),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black, fontSize: 15),
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               TextButton(
                 child: Text(
                   '添加',
-                  style: TextStyle(color: Colors.black, fontSize: 15),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black, fontSize: 15),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop({

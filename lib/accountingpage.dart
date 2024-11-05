@@ -295,6 +295,7 @@ class AccountingPageState extends State<AccountingPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      backgroundColor: themeColor.withOpacity(0.8),
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
@@ -325,7 +326,7 @@ class AccountingPageState extends State<AccountingPage> {
                       ),
                     ],
                   ),
-                  Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+                  Divider(color: Colors.grey.withOpacity(0.8), thickness: 1),
                   Text('收支类型', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 8),
                   Row(
@@ -354,23 +355,23 @@ class AccountingPageState extends State<AccountingPage> {
                             selectedTransactionType = selected ? '支出' : null;
                           });
                         },
-                        backgroundColor: coldColor.withOpacity(0.1),
-                        selectedColor: coldColor.withOpacity(0.2),
+                        backgroundColor: coldColor.withOpacity(0.8),
+                        selectedColor: coldColor.withOpacity(0.9),
                         checkmarkColor: coldColor,
                         labelStyle: TextStyle(
-                          color: selectedTransactionType == '支出' ? coldColor : textColor,
+                          color: selectedTransactionType == '支出' ? coldColor : textColor, // 比这个颜色深一些
                         ),
                       ),
                     ],
                   ),
-                  Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+                  Divider(color: Colors.grey.withOpacity(0.8), thickness: 1),
                   Text('类别', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: categories.map((category) {
-                      String categoryString = '${category['emoji']}${category['label']}';
+                      String categoryString = '${category['emoji']} ${category['label']}';
                       bool isSelected = selectedFilterCategories.contains(categoryString);
                       return FilterChip(
                         label: Text(categoryString),
@@ -384,8 +385,8 @@ class AccountingPageState extends State<AccountingPage> {
                             }
                           });
                         },
-                        backgroundColor: category['color'].withOpacity(0.1),
-                        selectedColor: category['color'].withOpacity(0.2),
+                        backgroundColor: category['color'].withOpacity(0.7),
+                        selectedColor: category['color'].withOpacity(0.8),
                         checkmarkColor: category['color'],
                         labelStyle: TextStyle(
                           color: isSelected ? category['color'] : textColor,
