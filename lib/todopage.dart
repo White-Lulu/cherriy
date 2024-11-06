@@ -245,7 +245,61 @@ class TodoPageState extends State<TodoPage> {
     // 获取当前分类的视图模式
     final isHorizontal = _viewModes[todo['category']] == ViewMode.horizontal;
     
+    if (isHorizontal) {
     return Padding(
+      padding: EdgeInsets.only(left: 10, right: 10, bottom: 5),
+      child: Card(
+        child: Container(
+          height: 110,
+          padding: EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    todo['task'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[800],
+                      decoration: todo['completed']
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                    ),
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale:  0.9 ,
+                child: Checkbox(
+                  value: todo['completed'],
+                  onChanged: (value) => _toggleComplete(index),
+                ),
+              ),
+              if (_deleteMode == todo['category'])
+                Positioned(
+                  // 根据视图模式调整删除按钮位置
+                  right: isHorizontal ? 2 : 0,
+                  bottom: isHorizontal ? 2 : 4,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: coldColor,
+                      size: isHorizontal ? 16 : 20,
+                    ),
+                    padding: isHorizontal ? EdgeInsets.all(4) : EdgeInsets.all(8),
+                    constraints: isHorizontal 
+                        ? BoxConstraints(minHeight: 32, minWidth: 32)
+                        : BoxConstraints(),
+                    onPressed: () => _deleteTodo(index),
+                  ),
+                ),
+                          ],
+                      ),
+                    ),
+                  ),
+        );
+    }else{
+      return Padding(
       // 根据视图模式调整内边距
       padding: isHorizontal 
           ? EdgeInsets.only(left: 10, right: 10, bottom: 5)
@@ -309,6 +363,7 @@ class TodoPageState extends State<TodoPage> {
         ),
       ),
     );
+    }
   }
 
   // 添加新的待办事项
