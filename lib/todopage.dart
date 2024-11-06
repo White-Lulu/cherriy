@@ -38,16 +38,22 @@ class TodoPageState extends State<TodoPage> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
+          Padding(
+            padding: const EdgeInsets.only(left:6, right: 8.0, top: 12.0, bottom: 8.0),
+            child: Row(
+              children: [ 
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.category),
+                    icon: Icon(
+                      Icons.category,
+                      color: _selectedCategoryId != 'none'
+                        ? themeProvider.todoCategories.firstWhere(
+                            (category) => category['id'] == _selectedCategoryId
+                          )['color']
+                        : null,
+                    ),
                     onSelected: (String categoryId) {
                       setState(() => _selectedCategoryId = categoryId);
                     },
@@ -64,51 +70,83 @@ class TodoPageState extends State<TodoPage> {
                             ))
                         .toList(),
                   ),
+                  SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _todoController,
                       decoration: InputDecoration(
-                        labelText: '待办事项',
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.add),
-                          onPressed: _addTodo,
+                      labelText: '添加待办',
+                      labelStyle: TextStyle(
+                        color: const Color.fromARGB(255, 100, 100, 100),
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: const Color.fromARGB(255, 214, 214, 214),
+                          width: 1.5,
                         ),
                       ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 2.0,
+                        ),
+                      ),
+                      border: UnderlineInputBorder(), // 文字＋底部横线
                     ),
+                    cursorColor:  const Color.fromARGB(255, 214, 214, 214),
                   ),
-                ],
-              ),
-            ),
+                  ),
+                  IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: _addTodo,
+                  tooltip: '添加待办',
+                ),
+            ],
+          ),
           ),
           SizedBox(height: 16),
           // 显示待办事项列表
           Expanded(
-            child: ListView(
-              children: themeProvider.todoCategories.map((category) {
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 2.0, bottom: 5.0),
+              child: ListView(
+                children: themeProvider.todoCategories.map((category) {
                 final categoryTodos = todos.where(
                   (todo) => todo['category'] == category['id']
                 ).toList();
 
                 if (categoryTodos.isEmpty) return SizedBox.shrink();
 
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(category['emoji']),
-                            SizedBox(width: 8),
-                            Text(
-                              category['label'],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: category['color'],
+                return Column(
+                  children: [
+                    SizedBox(
+                      height:48,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.only(left: 5, right: 5, bottom: 0), // 减小底部padding
+                        leading: SizedBox(
+                          height: 20,
+                          child: Row(
+                            //调整列的高度
+                            
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                category['emoji'],
+                                style: TextStyle(
+                                  fontSize: 17,
+                                ),
                               ),
-                            ),
-                          ],
+                              SizedBox(width: 8),
+                              Text(
+                                category['label'],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: category['color'],
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -140,31 +178,44 @@ class TodoPageState extends State<TodoPage> {
                           ],
                         ),
                       ),
-                      if (_expandedStates[category['id']] ?? true)
-                        _viewModes[category['id']] == ViewMode.horizontal
-                            ? SizedBox(
-                                height: 120,
+                    ),
+                    Divider(
+                      color: category['color'].withOpacity(0.9),
+                      height: 0, // 减小高度
+                      thickness: 1.5,
+                      indent: 2,
+                      endIndent: 10,
+                    ),
+                    SizedBox(height: 5),
+                    if (_expandedStates[category['id']] ?? true)
+                      _viewModes[category['id']] == ViewMode.horizontal
+                          ? SizedBox(
+                              height: 120,
+                              child: Container(
+                                padding: EdgeInsets.only(left: 0, right: 12),
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: categoryTodos.length,
                                   itemBuilder: (context, index) {
                                     return SizedBox(
                                       width: 200,
+                                      height: 120,
                                       child: _buildTodoCard(categoryTodos[index], 
                                         todos.indexOf(categoryTodos[index])),
                                     );
                                   },
                                 ),
-                              )
-                            : Column(
-                                children: categoryTodos.map((todo) =>
-                                  _buildTodoCard(todo, todos.indexOf(todo))).toList(),
                               ),
-                    ],
-                  ),
+                            )
+                          : Column(
+                              children: categoryTodos.map((todo) =>
+                                _buildTodoCard(todo, todos.indexOf(todo))).toList(),
+                            ),
+                  ],
                 );
               }).toList(),
             ),
+          ),
           ),
         ],
       ),
