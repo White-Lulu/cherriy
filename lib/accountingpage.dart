@@ -46,7 +46,7 @@ class AccountingPageState extends State<AccountingPage> {
   // 在 AccountingPageState 类中添加新的状态变量
   bool _isAmountAscending = true;
   bool _isTimeAscending = true;
-  // 在 AccountingPageState 类中添加���状态变量
+  // 在 AccountingPageState 类中添加态变量
   List<String> selectedFilterCategories = []; // 用于存储筛选选中的类别
   // 在 AccountingPageState 类中添加的状态变量
   String _sortType = 'time'; // 'time', 'amount'
@@ -106,6 +106,9 @@ class AccountingPageState extends State<AccountingPage> {
   List<FlSpot> _incomeSpotsFuture = [];
   List<FlSpot> _netIncomeSpotsReal = [];
   List<FlSpot> _netIncomeSpotsFuture = [];
+
+  // 添加触摸点的状态跟踪
+  List<LineBarSpot> touchedSpots = [];
 
   @override
   void initState() {
@@ -588,10 +591,10 @@ class AccountingPageState extends State<AccountingPage> {
     // 累加每天的数据
     for (var record in records) {
       try {
-        // 解析时���戳并转换为本地时间
+        // 解析时戳并转换为本地时间
         DateTime recordDate =
             DateTime.parse(record['timestamp'] ?? '').toLocal();
-        // 只保留年��日
+        // 只保留年日
         recordDate =
             DateTime(recordDate.year, recordDate.month, recordDate.day);
 
@@ -648,7 +651,7 @@ class AccountingPageState extends State<AccountingPage> {
       print(
           '预测值: 支出=$predictedExpense, 收入=$predictedIncome, 净收入=$predictedNetIncome'); // 添加调试输出
 
-      // ���加预测的第5天数据
+      // 加预测的第5天数据
       _expenseSpots.add(FlSpot(4, predictedExpense));
       _incomeSpots.add(FlSpot(4, predictedIncome));
       _netIncomeSpots.add(FlSpot(4, predictedNetIncome));
@@ -776,200 +779,214 @@ class AccountingPageState extends State<AccountingPage> {
           height: _isChartExpanded ? 170 : 0,
           child: SingleChildScrollView(
             physics: NeverScrollableScrollPhysics(),
-            child: Container(
-              height: 180,
-              padding: EdgeInsets.only(left: 12, right: 17, top: 5, bottom: 0),
-              child: LineChart(
-                LineChartData(
-                  minY: _minY,
-                  maxY: _maxY,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: true,
-                    horizontalInterval:
-                        math.max((_maxY - _minY) / 10, 0.1), // 添加最小值限制
-                    verticalInterval: 1,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1.2,
-                      );
-                    },
-                    getDrawingVerticalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1.2,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 38,
-                        interval: math.max((_maxY - _minY) / 5, 0.1),
-                        getTitlesWidget: (value, meta) {
-                          // 如果是最小值，则不显示
-                          if (value == _minY || value == _maxY) {
-                            return const SizedBox.shrink();
-                          }
-                          return Text(
-                            value.toStringAsFixed(0),
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                            ),
+            child: Stack(
+              children: [
+                Container(
+                  height: 180,
+                  padding: EdgeInsets.only(left: 12, right: 17, top: 5, bottom: 0),
+                  child: LineChart(
+                    LineChartData(
+                      minY: _minY,
+                      maxY: _maxY,
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: true,
+                        horizontalInterval:
+                            math.max((_maxY - _minY) / 10, 0.1), // 添加最小值限制
+                        verticalInterval: 1,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.withOpacity(0.2),
+                            strokeWidth: 1.2,
+                          );
+                        },
+                        getDrawingVerticalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.withOpacity(0.2),
+                            strokeWidth: 1.2,
                           );
                         },
                       ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        getTitlesWidget: (value, meta) {
-                          if (value % 1 != 0) return Text('');
-                          final index = value.toInt();
-                          if (index < 0 || index >= 5) return Text('');
-
-                          final today = DateTime.now();
-                          final date = today.add(Duration(days: index - 3)); // 3天前到明天
-                          String dateText = '${date.month}/${date.day}';
-
-                          // 判断是否为今天的数据（index == 3）
-                          if (index == 3) {
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
-                              child: Text(
-                                dateText,
-                                overflow: TextOverflow.ellipsis,
+                      titlesData: FlTitlesData(
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 38,
+                            interval: math.max((_maxY - _minY) / 5, 0.1),
+                            getTitlesWidget: (value, meta) {
+                              // 如果是最小值，则不显示
+                              if (value == _minY || value == _maxY) {
+                                return const SizedBox.shrink();
+                              }
+                              return Text(
+                                value.toStringAsFixed(0),
                                 style: TextStyle(
-                                  color: textColor,  // 使用主题色
+                                  color: Colors.grey,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold,  // 加粗
                                 ),
-                              ),
-                            );
-                          }
+                              );
+                            },
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              if (value % 1 != 0) return Text('');
+                              final index = value.toInt();
+                              if (index < 0 || index >= 5) return Text('');
 
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
-                            child: Text(
-                              dateText,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11,
-                              ),
-                            ),
-                          );
-                        },
+                              final today = DateTime.now();
+                              final date = today.add(Duration(days: index - 3)); // 3天前到明天
+                              String dateText = '${date.month}/${date.day}';
+
+                              // 判断是否为今天的数据（index == 3）
+                              if (index == 3) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+                                  child: Text(
+                                    dateText,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: textColor,  // 使用主题色
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,  // 加粗
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+                                child: Text(
+                                  dateText,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        rightTitles:
+                            AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles:
+                            AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       ),
-                    ),
-                    rightTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  lineBarsData: [
-                    // 支出曲线
-                    LineChartBarData(
-                      spots: _expenseSpots,
-                      color: coldColor,
-                      barWidth: 2,
-                      dotData: FlDotData(
+                      lineBarsData: [
+                        // 支出曲线
+                        LineChartBarData(
+                          spots: _expenseSpots,
+                          color: coldColor,
+                          barWidth: 2,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) {
+                              // 只在 index == 3 (今天) 时显示点
+                              return FlDotCirclePainter(
+                                radius: index == 3 ? 4 : 0,  // 今天显示点，其他天不显示
+                                color: coldColor,
+                                strokeWidth: 2,
+                                strokeColor: coldColor,
+                              );
+                            },
+                          ),
+                          isCurved: true,
+                        ),
+                        // 收入曲线
+                        LineChartBarData(
+                          spots: _incomeSpots,
+                          color: warmColor,
+                          barWidth: 2,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) {
+                              return FlDotCirclePainter(
+                                radius: index == 3 ? 4 : 0,
+                                color: warmColor,
+                                strokeWidth: 2,
+                                strokeColor: warmColor,
+                              );
+                            },
+                          ),
+                          isCurved: true,
+                        ),
+                        // 净收入曲线
+                        LineChartBarData(
+                          spots: _netIncomeSpots,
+                          color: chartColor,
+                          barWidth: 2,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) {
+                              return FlDotCirclePainter(
+                                radius: index == 3 ? 4 : 0,
+                                color: chartColor,
+                                strokeWidth: 2,
+                                strokeColor: chartColor,
+                              );
+                            },
+                          ),
+                          isCurved: true,
+                        ),
+                      ],
+                      lineTouchData: LineTouchData(
+                        // 让linetouchdata置于最上层
+                        enabled: true,
+                        touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
+                          setState(() {
+                            touchedSpots = response?.lineBarSpots ?? [];
+                          });
+                        },
+                        touchTooltipData: LineTouchTooltipData(
+                          tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                          fitInsideHorizontally: false,
+                          fitInsideVertically: false,
+                          tooltipMargin: touchedSpots.any((spot) => spot.y > _maxY / 2) ? -50 : 10,
+                          tooltipPadding: EdgeInsets.all(8),
+                          getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              String title = spot.barIndex == 0
+                                  ? '支出: '
+                                  : spot.barIndex == 1
+                                      ? '收入: '
+                                      : '净收入: ';
+                              return LineTooltipItem(
+                                '$title${spot.y.toStringAsFixed(2)}',
+                                TextStyle(color: Colors.white, fontSize: 10),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                      borderData: FlBorderData(
                         show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          // 只在 index == 3 (今天) 时显示点
-                          return FlDotCirclePainter(
-                            radius: index == 3 ? 4 : 0,  // 今天显示点，其他天不显示
-                            color: coldColor,
-                            strokeWidth: 2,
-                            strokeColor: coldColor,
-                          );
-                        },
-                      ),
-                      isCurved: true,
-                    ),
-                    // 收入曲线
-                    LineChartBarData(
-                      spots: _incomeSpots,
-                      color: warmColor,
-                      barWidth: 2,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: index == 3 ? 4 : 0,
-                            color: warmColor,
-                            strokeWidth: 2,
-                            strokeColor: warmColor,
-                          );
-                        },
-                      ),
-                      isCurved: true,
-                    ),
-                    // 净收入曲线
-                    LineChartBarData(
-                      spots: _netIncomeSpots,
-                      color: chartColor,
-                      barWidth: 2,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: index == 3 ? 4 : 0,
-                            color: chartColor,
-                            strokeWidth: 2,
-                            strokeColor: chartColor,
-                          );
-                        },
-                      ),
-                      isCurved: true,
-                    ),
-                  ],
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    touchTooltipData: LineTouchTooltipData(
-                      tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
-                      getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          String title = spot.barIndex == 0
-                              ? '支出: '
-                              : spot.barIndex == 1
-                                  ? '收入: '
-                                  : '净收入: ';
-                          return LineTooltipItem(
-                            '$title${spot.y.toStringAsFixed(2)}',
-                            TextStyle(color: Colors.white, fontSize: 12),
-                          );
-                        }).toList();
-                      },
-                    ),
-                  ),
-                  borderData: FlBorderData(
-                    show: true,
-                    border: Border(
-                      left: BorderSide(
-                        color: Colors.grey.withOpacity(0.5), // 左边框颜色
-                        width: 1.5, // 左边框宽度
-                      ),
-                      bottom: BorderSide(
-                        color: Colors.grey.withOpacity(0.5), // 下边框颜色
-                        width: 1.5, // 下边框宽度
-                      ),
-                      top: BorderSide(
-                        color: Colors.grey.withOpacity(0.2), // 上边框颜色（更淡）
-                        width: 1, // 上边框宽度（更细）
-                      ),
-                      right: BorderSide(
-                        color: Colors.grey.withOpacity(0.2), // 右边框颜色（更淡）
-                        width: 1, // 右边框宽度（更细）
+                        border: Border(
+                          left: BorderSide(
+                            color: Colors.grey.withOpacity(0.5), // 左边框颜色
+                            width: 1.5, // 左边框宽度
+                          ),
+                          bottom: BorderSide(
+                            color: Colors.grey.withOpacity(0.5), // 下边框颜色
+                            width: 1.5, // 下边框宽度
+                          ),
+                          top: BorderSide(
+                            color: Colors.grey.withOpacity(0.2), // 上边框颜色（更淡）
+                            width: 1, // 上边框宽度（更细）
+                          ),
+                          right: BorderSide(
+                            color: Colors.grey.withOpacity(0.2), // 右边框颜色（更淡）
+                            width: 1, // 右边框宽度（更细）
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -1207,7 +1224,7 @@ class AccountingPageState extends State<AccountingPage> {
                     ? (_isAmountAscending ? '金额从低到高' : '金额从高到低')
                     : '按金额排序',
                 color: _sortType == 'amount'
-                    ? Theme.of(context).primaryColor
+                    ? (_isAmountAscending ? coldColor : warmColor)
                     : null,
               ),
               IconButton(
@@ -1216,10 +1233,10 @@ class AccountingPageState extends State<AccountingPage> {
                     : Icons.arrow_downward),
                 onPressed: _toggleSortByTime,
                 tooltip: _sortType == 'time'
-                    ? (_isTimeAscending ? '从旧到新' : '从新到')
+                    ? (_isTimeAscending ? '从旧到新' : '从新到旧')
                     : '按时间排序',
                 color:
-                    _sortType == 'time' ? Theme.of(context).primaryColor : null,
+                    _sortType == 'time' ? (_isTimeAscending ? coldColor : warmColor) : null,
               ),
               IconButton(
                 icon: Icon(_viewMode == 0
@@ -1236,14 +1253,15 @@ class AccountingPageState extends State<AccountingPage> {
               ),
               IconButton(
                 icon: Icon(_isDeleteMode
-                    ? Icons.delete_forever
+                    ? Icons.check
                     : Icons.delete_outline),
                 onPressed: () {
                   setState(() {
                     _isDeleteMode = !_isDeleteMode;
                   });
                 },
-                tooltip: _isDeleteMode ? '退出删除模式' : '入删除模式',
+                tooltip: _isDeleteMode ? '退出删除模式' : '进入删除模式',
+                color: _isDeleteMode ? warmColor : null,
               ),
             ],
           ),
@@ -1423,14 +1441,14 @@ class AccountingPageState extends State<AccountingPage> {
             ),
             if (_isDeleteMode)
               Positioned(
-                right: 4,
-                bottom: 4,
-                child: IconButton(
-                  icon: Icon(Icons.remove_circle, color: Colors.red),
-                  onPressed: () => _deleteRecord(index),
-                  iconSize: 20,
-                ),
+              right: 2,
+              bottom: 4,
+              child: IconButton(
+                icon: Icon(Icons.remove_circle_outline, color: coldColor),
+                onPressed: () => _deleteRecord(index),
+                iconSize: 25,
               ),
+            ),
           ],
         ),
       );
@@ -1507,12 +1525,22 @@ class AccountingPageState extends State<AccountingPage> {
               ),
             ),
           ),
-          if (_isDeleteMode)
+          if (_isDeleteMode && _viewMode == 1)// 为两列试图和三列试图设置不同的按钮
+                Positioned(
+                    right: -2,
+                    bottom: 4,
+                    child: IconButton(
+                icon: Icon(Icons.remove_circle_outline, color: coldColor),
+                onPressed: () => _deleteRecord(index),
+                iconSize: 22.5,
+              ),
+            ),
+          if (_isDeleteMode && _viewMode == 2)
             Positioned(
-              right: 4,
+              right: -2,
               bottom: 4,
               child: IconButton(
-                icon: Icon(Icons.remove_circle, color: Colors.red),
+                icon: Icon(Icons.remove_circle_outline, color: coldColor),
                 onPressed: () => _deleteRecord(index),
                 iconSize: 20,
               ),
