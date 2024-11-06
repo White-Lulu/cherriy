@@ -33,6 +33,8 @@ class TodoPageState extends State<TodoPage> {
   // 添加一个成员变量来存储 Provider 的引用
   late final ThemeProvider _themeProvider;
 
+  String? _deleteMode; // 添加这一行，用于跟踪当前哪个分类处于删除模式
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -104,11 +106,11 @@ class TodoPageState extends State<TodoPage> {
             ],
           ),
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 10),
           // 显示待办事项列表
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 2.0, bottom: 5.0),
+              padding: const EdgeInsets.only(left:10.0, right: 10.0, top: 0.0, bottom: 5.0),
               child: ListView(
                 children: themeProvider.todoCategories.map((category) {
                 final categoryTodos = todos.where(
@@ -117,101 +119,112 @@ class TodoPageState extends State<TodoPage> {
 
                 if (categoryTodos.isEmpty) return SizedBox.shrink();
 
-                return Column(
-                  children: [
-                    SizedBox(
-                      height:48,
-                      child: ListTile(
-                        contentPadding: EdgeInsets.only(left: 5, right: 5, bottom: 0), // 减小底部padding
-                        leading: SizedBox(
-                          height: 20,
-                          child: Row(
-                            //调整列的高度
-                            
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 5), // 增加分类之间的间距
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height:48,
+                        child: ListTile(
+                          contentPadding: EdgeInsets.only(left: 15, right: 5, bottom: 0), // 减小底部padding
+                          leading: SizedBox(
+                            height: 20,
+                            child: Row(
+                              //调整列的高度
+                              
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  category['emoji'],
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  category['label'],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: category['color'],
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                category['emoji'],
-                                style: TextStyle(
-                                  fontSize: 17,
-                                ),
+                              IconButton(
+                                icon: Icon(_viewModes[category['id']] == ViewMode.horizontal
+                                    ? Icons.view_module
+                                    : Icons.view_list),
+                                onPressed: () {
+                                  setState(() {
+                                    _viewModes[category['id']] = _viewModes[category['id']] == ViewMode.horizontal
+                                        ? ViewMode.vertical
+                                        : ViewMode.horizontal;
+                                    _saveViewModes();
+                                  });
+                                },
                               ),
-                              SizedBox(width: 8),
-                              Text(
-                                category['label'],
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: category['color'],
-                                  fontSize: 18,
-                                ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline),
+                                onPressed: () {
+                                  setState(() {
+                                    _deleteMode = _deleteMode == category['id'] ? null : category['id'];
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(_expandedStates[category['id']] ?? true
+                                    ? Icons.expand_less
+                                    : Icons.expand_more),
+                                onPressed: () {
+                                  setState(() {
+                                    _expandedStates[category['id']] = !(_expandedStates[category['id']] ?? true);
+                                    _saveExpandedStates();
+                                  });
+                                },
                               ),
                             ],
                           ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(_viewModes[category['id']] == ViewMode.horizontal
-                                  ? Icons.view_module
-                                  : Icons.view_list),
-                              onPressed: () {
-                                setState(() {
-                                  _viewModes[category['id']] = _viewModes[category['id']] == ViewMode.horizontal
-                                      ? ViewMode.vertical
-                                      : ViewMode.horizontal;
-                                  _saveViewModes();
-                                });
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(_expandedStates[category['id']] ?? true
-                                  ? Icons.expand_less
-                                  : Icons.expand_more),
-                              onPressed: () {
-                                setState(() {
-                                  _expandedStates[category['id']] = !(_expandedStates[category['id']] ?? true);
-                                  _saveExpandedStates();
-                                });
-                              },
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
-                    Divider(
-                      color: category['color'].withOpacity(0.9),
-                      height: 0, // 减小高度
-                      thickness: 1.5,
-                      indent: 2,
-                      endIndent: 10,
-                    ),
-                    SizedBox(height: 5),
-                    if (_expandedStates[category['id']] ?? true)
-                      _viewModes[category['id']] == ViewMode.horizontal
-                          ? SizedBox(
-                              height: 120,
-                              child: Container(
-                                padding: EdgeInsets.only(left: 0, right: 12),
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: categoryTodos.length,
-                                  itemBuilder: (context, index) {
-                                    return SizedBox(
-                                      width: 200,
-                                      height: 120,
-                                      child: _buildTodoCard(categoryTodos[index], 
-                                        todos.indexOf(categoryTodos[index])),
-                                    );
-                                  },
+                      Divider(
+                        color: category['color'].withOpacity(0.5),
+                        height: 0, // 减小高度
+                        thickness: 2.0,
+                        indent: 10,
+                        endIndent: 10,
+                      ),
+                      SizedBox(height: 6),
+                      if (_expandedStates[category['id']] ?? true)
+                        _viewModes[category['id']] == ViewMode.horizontal
+                            ? SizedBox(
+                                height: 120,
+                                child: Container(
+                                  padding: EdgeInsets.only(left: 0, right: 15),
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: categoryTodos.length,
+                                    itemBuilder: (context, index) {
+                                      return SizedBox(
+                                        width: 200,
+                                        height: 120,
+                                        child: _buildTodoCard(categoryTodos[index], 
+                                          todos.indexOf(categoryTodos[index])),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            )
-                          : Column(
-                              children: categoryTodos.map((todo) =>
-                                _buildTodoCard(todo, todos.indexOf(todo))).toList(),
+                              )
+                            : Column(
+                                children: categoryTodos.map((todo) =>
+                                  _buildTodoCard(todo, todos.indexOf(todo))).toList(),
                             ),
-                  ],
+                    ],
+                  ),
                 );
               }).toList(),
             ),
@@ -224,28 +237,75 @@ class TodoPageState extends State<TodoPage> {
 
   // 添加待办事项卡片构建方法
   Widget _buildTodoCard(Map<String, dynamic> todo, int index) {
-    return Card(
-      child: ListTile(
-        title: Text(
-          todo['task'],
-          style: TextStyle(
-            decoration: todo['completed']
-                ? TextDecoration.lineThrough
-                : TextDecoration.none,
+    final themeColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final warmColor = ColorScorer.getWarmColor(themeColor, textColor);
+    final coldColor = ColorScorer.getColdColor(themeColor, textColor);
+    
+    // 获取当前分类的视图模式
+    final isHorizontal = _viewModes[todo['category']] == ViewMode.horizontal;
+    
+    return Padding(
+      // 根据视图模式调整内边距
+      padding: isHorizontal 
+          ? EdgeInsets.only(left: 10, right: 10, bottom: 5)
+          : EdgeInsets.only(left: 10, right: 10, bottom: 5),
+      child: Card(
+        // 水平视图时设置固定高度和更小的内边距
+        child: Container(
+          height: isHorizontal ? 110 : null,
+          padding: isHorizontal ? EdgeInsets.all(5) : null,
+          child: Stack(
+            children: [
+              ListTile(
+                // 水平视图时调整标题样式
+                title: Text(
+                  todo['task'],
+                  style: TextStyle(
+                    fontSize: isHorizontal ? 16 : 16,
+                    decoration: todo['completed']
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                    decorationColor: warmColor,
+                    decorationThickness: 2.0,
+                  ),
+                  maxLines: isHorizontal ? 4 : null, // 水平视图限制行数
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.scale(
+                      // 水平视图时缩小复选框
+                      scale: isHorizontal ? 0.9 : 1.0,
+                      child: Checkbox(
+                        value: todo['completed'],
+                        onChanged: (value) => _toggleComplete(index),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_deleteMode == todo['category'])
+                Positioned(
+                  // 根据视图模式调整删除按钮位置
+                  right: isHorizontal ? 2 : 0,
+                  bottom: isHorizontal ? 2 : 4,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: coldColor,
+                      size: isHorizontal ? 16 : 20,
+                    ),
+                    padding: isHorizontal ? EdgeInsets.all(4) : EdgeInsets.all(8),
+                    constraints: isHorizontal 
+                        ? BoxConstraints(minHeight: 32, minWidth: 32)
+                        : BoxConstraints(),
+                    onPressed: () => _deleteTodo(index),
+                  ),
+                ),
+            ],
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Checkbox(
-              value: todo['completed'],
-              onChanged: (value) => _toggleComplete(index),
-            ),
-            IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () => _deleteTodo(index),
-            ),
-          ],
         ),
       ),
     );
@@ -283,7 +343,7 @@ class TodoPageState extends State<TodoPage> {
     });
   }
 
-  // 添加保存视图模式的方法
+  // 添加保存视模式的方法
   void _saveViewModes() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('todoViewModes', jsonEncode(_viewModes.map(
@@ -293,19 +353,22 @@ class TodoPageState extends State<TodoPage> {
 
   // 添加加载视图模式的方法
   void _loadViewModes() async {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
     final prefs = await SharedPreferences.getInstance();
     final String? savedViewModes = prefs.getString('todoViewModes');
     if (savedViewModes != null) {
-      final Map<String, dynamic> viewModesMap = jsonDecode(savedViewModes);
+      if (!mounted) return;
       setState(() {
-        _viewModes = viewModesMap.map((key, value) => MapEntry(
+        final Map<String, dynamic> savedMap = jsonDecode(savedViewModes);
+        _viewModes = savedMap.map((key, value) => MapEntry(
           key,
           ViewMode.values.firstWhere((e) => e.toString() == value)
         ));
       });
     }
+    
     // 为所有类别设置默认视图模式
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     for (var category in themeProvider.todoCategories) {
       if (!_viewModes.containsKey(category['id'])) {
         _viewModes[category['id']] = ViewMode.vertical;
@@ -321,20 +384,24 @@ class TodoPageState extends State<TodoPage> {
 
   // 修改加载折叠状态的方法
   Future<void> _loadExpandedStates() async {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final prefs = await SharedPreferences.getInstance();
     final String? savedStates = prefs.getString('todoExpandedStates');
-    if (savedStates != null) {
-      setState(() {
+    
+    if (!mounted) return;
+    
+    setState(() {
+      if (savedStates != null) {
         _expandedStates = Map<String, bool>.from(jsonDecode(savedStates));
-      });
-    }
-    // 为所有类别设置默认折叠状态
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    for (var category in themeProvider.todoCategories) {
-      if (!_expandedStates.containsKey(category['id'])) {
-        _expandedStates[category['id']] = true;
       }
-    }
+      
+      // 为所有类别设置默认折叠状态
+      for (var category in themeProvider.todoCategories) {
+        if (!_expandedStates.containsKey(category['id'])) {
+          _expandedStates[category['id']] = true;
+        }
+      }
+    });
   }
 
   @override
