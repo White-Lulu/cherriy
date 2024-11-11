@@ -4,7 +4,7 @@
 
 ## Download
 
-Please seeeee THE RELEASE ！！！~~ →→→
+Please seeeee THE RELEASE (of the repository White-Lulu.github.io) ！！！
 
 [The Latest Version 1.5.0]
 
