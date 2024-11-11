@@ -4,8 +4,12 @@
 
 ## Download
 
-[Latest Version 1.2.0](./build/app/outputs/flutter-apk/cherriy.apk)
+Please seeeee THE RELEASE ！！！~~ →→→
 
-[Version 0.0.1](./sources/cherriy.apk)
+[The Latest Version 1.5.0]
+
+[Version 1.2.0]
+
+[Version 0.0.1]
 
 Thanks for your support~😊😊😊
