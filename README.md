@@ -10,6 +10,6 @@ Please seeeee THE RELEASE (of the repository White-Lulu.github.io) ！！！
 
 ![App Screenshot](./images/example.png)
 
-For reference, you can check this old update log https://white-lulu.github.io/Cherriy%201/diary/2024%2011%2011 to learn more about the app. The bugs mentioned there have mostly been fixed. Enjoy! 
+For reference, you can check this **old update log https://white-lulu.github.io/Cherriy%201/diary/2024%2011%2011** to learn more about the app. The bugs mentioned there have mostly been fixed. Enjoy! 
 
 Thanks for your support~😊😊😊
